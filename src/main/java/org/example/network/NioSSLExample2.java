@@ -1,6 +1,5 @@
 package org.example.network;
 
-import org.example.network.SslPipe.WrapperResult;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -9,9 +8,10 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
+import java.util.List;
 
 public class NioSSLExample2 {
     public static void main(String[] args) throws Exception {
@@ -25,45 +25,56 @@ public class NioSSLExample2 {
         SelectionKey key = channel.register(selector, ops);
 
         // create the worker threads
-        final Executor ioWorker = Executors.newSingleThreadExecutor();
-        final Executor taskWorkers = Executors.newFixedThreadPool(2);
 
         // create the SSLEngine
         final SSLEngine engine = SSLContext.getDefault().createSSLEngine();
         engine.setUseClientMode(true);
-        SslPipe sslPipe = new SslPipe(CachedBufferAllocator.heap(), channel, engine);
+        SslClientChannel sslPipe = new SslClientChannel(CachedBufferAllocator.heap(), channel, engine);
         String req = """
                 GET / HTTP/1.0\r
                 Connection: close\r
                 \r
                 """;
-        ByteBuffer decrypted = ByteBuffer.allocate(1024);
-        sslPipe.wrapAndSend(ByteBuffer.wrap(req.getBytes()));
+        ByteBuffer buf = ByteBuffer.allocate(1024);
+        sslPipe.write(ByteBuffer.wrap(req.getBytes()));
+        List<byte[]> bytesList = new ArrayList<>();
+        int totalBytes = 0;
         // NIO selector
         while (true) {
+            // noinspection resource
             key.selector().select();
+            // noinspection resource
             Iterator<SelectionKey> keys = key.selector().selectedKeys().iterator();
+            int read = 0;
             while (keys.hasNext()) {
-                SelectionKey k = keys.next();
+                keys.next();
                 keys.remove();
-                if (k.isReadable()) {
-                    decrypted.clear();
-                    WrapperResult result = sslPipe.receiveData(decrypted);
-                    if (result.buf != decrypted) {
-                        decrypted = result.buf;
-                    }
-                    decrypted.flip();
-                    print(decrypted);
+                buf.clear();
+                while ((read = sslPipe.read(buf)) > 0) {
+                    totalBytes += read;
+                    buf.flip();
+                    bytesList.add(readAll(buf));
+                    buf.clear();
                 }
             }
+            if (read == -1) {
+                break;
+            }
         }
+        ByteBuffer buffer = ByteBuffer.allocate(totalBytes);
+        for (byte[] bytes : bytesList) {
+            buffer.put(bytes);
+        }
+        System.out.println(totalBytes);
+        System.out.println(sslPipe.getTotalResult());
+        System.out.println(new String(buffer.array(), StandardCharsets.UTF_8));
+        channel.close();
+
     }
 
-    private static void print(ByteBuffer decrypted) {
-        byte[] dst = new byte[decrypted.remaining()];
-        decrypted.get(dst);
-        String response = new String(dst);
-        System.out.print(response);
-        System.out.flush();
+    private static byte[] readAll(ByteBuffer buffer) {
+        byte[] dst = new byte[buffer.remaining()];
+        buffer.get(dst);
+        return dst;
     }
 }

@@ -12,21 +12,26 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
-public class CachedBufferAllocator implements BufferAllocator, AutoCloseable {
+public class CachedBufferAllocator implements ByteBufferAllocator, AutoCloseable {
 
     private static final Logger logger = Logger.getLogger(CachedBufferAllocator.class.getName());
 
     private final Map<Integer, Cache> cacheMap = new ConcurrentHashMap<>();
-    private final BufferAllocator target;
+    private final ByteBufferAllocator target;
     private long expirationInterval = Duration.ofMinutes(10).toMillis();
     private int maxCacheSize = 2048;
+    private volatile boolean closed = false;
+
+    {
+        Thread.startVirtualThread(this::clearExpired);
+    }
 
 
-    public CachedBufferAllocator(BufferAllocator target) {
+    public CachedBufferAllocator(ByteBufferAllocator target) {
         this.target = target;
     }
 
-    public static BufferAllocator heap() {
+    public static ByteBufferAllocator heap() {
         return new CachedBufferAllocator(new HeapBufferAllocator());
     }
 
@@ -43,7 +48,7 @@ public class CachedBufferAllocator implements BufferAllocator, AutoCloseable {
         }
         int capacity = buffer.capacity();
         Cache cache = cacheMap.computeIfAbsent(capacity, k -> new Cache());
-        if (!cache.closed && cache.size() < maxCacheSize) {
+        if (!closed && cache.size() < maxCacheSize) {
             cache.put(buffer, System.currentTimeMillis() + expirationInterval);
         } else {
             target.free(buffer);
@@ -66,37 +71,50 @@ public class CachedBufferAllocator implements BufferAllocator, AutoCloseable {
         this.maxCacheSize = maxCacheSize;
     }
 
-    private TimeMark wrap(ByteBuffer buffer) {
-        return new TimeMark(buffer, System.currentTimeMillis() + expirationInterval);
+    private BufWrap wrap(ByteBuffer buffer) {
+        return new BufWrap(buffer, System.currentTimeMillis() + expirationInterval);
     }
 
     @Override
     public void close() {
-        for (Cache value : cacheMap.values()) {
-            value.closed = true;
+        closed = true;
+    }
+
+    private void clearExpired() {
+        long nanos = Duration.ofSeconds(1).toNanos();
+        while (!closed) {
+            try {
+                LockSupport.parkNanos(nanos);
+                for (Cache value : cacheMap.values()) {
+                    value.clearExpired();
+                }
+            } catch (Exception e) {
+                logger.log(Level.WARNING, "clean cache error", e);
+            }
         }
     }
 
-    static class TimeMark {
-        private final ByteBuffer buffer;
-        private final long time;
+    record BufWrap(ByteBuffer buffer, long time) {
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            BufWrap bufWrap = (BufWrap) o;
+            return buffer == bufWrap.buffer;
+        }
 
-        TimeMark(ByteBuffer buffer, long time) {
-            this.buffer = buffer;
-            this.time = time;
+        @Override
+        public int hashCode() {
+            return System.identityHashCode(buffer);
         }
     }
 
     static class Cache {
         private final Lock lock = new ReentrantLock();
-        private final Deque<TimeMark> deque = new LinkedList<>();
-        private final Set<ByteBuffer> buffers = new HashSet<>();
+        private final Deque<BufWrap> deque = new LinkedList<>();
+        private final Set<BufWrap> buffers = new HashSet<>();
         private int size;
-        private volatile boolean closed = false;
 
-        {
-            Thread.startVirtualThread(this::cleanExpirationElement);
-        }
 
         public int size() {
             lock.lock();
@@ -109,10 +127,10 @@ public class CachedBufferAllocator implements BufferAllocator, AutoCloseable {
 
         public ByteBuffer getOrDefault(Supplier<ByteBuffer> supplier) {
             ByteBuffer result = getInLock(() -> {
-                TimeMark mark = deque.pollFirst();
+                BufWrap mark = deque.pollFirst();
                 if (mark != null) {
                     ByteBuffer buffer = mark.buffer;
-                    buffers.remove(buffer);
+                    buffers.remove(mark);
                     size--;
                     return buffer.clear();
                 }
@@ -123,8 +141,9 @@ public class CachedBufferAllocator implements BufferAllocator, AutoCloseable {
 
         public void put(ByteBuffer buffer, long expTime) {
             runInLock(() -> {
-                if (buffers.add(buffer)) {
-                    deque.addFirst(new TimeMark(buffer, expTime));
+                BufWrap wrap = new BufWrap(buffer, expTime);
+                if (buffers.add(wrap)) {
+                    deque.addFirst(wrap);
                     size++;
                 } else {
                     logger.warning("buffer is already in cache");
@@ -132,34 +151,19 @@ public class CachedBufferAllocator implements BufferAllocator, AutoCloseable {
             });
         }
 
-
-        private void cleanExpirationElement() {
-            long nanos = Duration.ofSeconds(1).toNanos();
-            while (!closed) {
-                try {
-                    LockSupport.parkNanos(nanos);
-                    runInLock(this::doClean);
-                } catch (Exception e) {
-                    logger.log(Level.WARNING, "clean cache error", e);
-                }
-            }
-            runInLock(this::clear);
+        private void clearExpired() {
+            runInLock(this::doClearExpired);
         }
 
-        private void clear() {
-            deque.clear();
-            buffers.clear();
-        }
-
-        private void doClean() {
+        private void doClearExpired() {
             long now = System.currentTimeMillis();
             while (true) {
-                TimeMark last = deque.peekLast();
-                if (last != null && last.time > now) {
+                BufWrap last = deque.peekLast();
+                if (last != null && now > last.time) {
                     try {
-                        TimeMark mark = deque.removeLast();
+                        BufWrap mark = deque.removeLast();
                         if (mark != null) {
-                            buffers.remove(mark.buffer);
+                            buffers.remove(mark);
                         }
                         size--;
                     } catch (NoSuchElementException e) {
