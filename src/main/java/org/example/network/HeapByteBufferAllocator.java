@@ -2,7 +2,7 @@ package org.example.network;
 
 import java.nio.ByteBuffer;
 
-public class HeapBufferAllocator implements ByteBufferAllocator {
+public class HeapByteBufferAllocator implements ByteBufferAllocator {
     @Override
     public ByteBuffer allocate(int capacity) {
         return ByteBuffer.allocate(capacity);
@@ -10,6 +10,11 @@ public class HeapBufferAllocator implements ByteBufferAllocator {
 
     @Override
     public void free(ByteBuffer buffer) {
+
+    }
+
+    @Override
+    public void close() {
 
     }
 }

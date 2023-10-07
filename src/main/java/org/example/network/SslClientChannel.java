@@ -101,6 +101,7 @@ public class SslClientChannel {
                 }
             }
         }
+        allocator.free(wrap_src);
         return result;
     }
 
@@ -122,12 +123,12 @@ public class SslClientChannel {
     }
 
     private SSLEngineResult receiveAndUnwrap() throws IOException {
-        Status status;
-        SSLEngineResult result;
-        ByteBuffer buf = allocate(BufType.APPLICATION);
         if (engineClosed) {
             throw new IOException("Engine is closed");
         }
+        Status status;
+        SSLEngineResult result;
+        ByteBuffer unwrap_dst = allocate(BufType.APPLICATION);
         synchronized (unwrapLock) {
             do {
                 if (!channelClosed) {
@@ -140,18 +141,18 @@ public class SslClientChannel {
                     }
                 }
                 unwrap_src.flip();
-                result = engine.unwrap(unwrap_src, buf);
-                while (buf.hasRemaining()) {
-                    buf.flip();
-                    int remaining = buf.remaining();
+                result = engine.unwrap(unwrap_src, unwrap_dst);
+                while (unwrap_dst.hasRemaining()) {
+                    unwrap_dst.flip();
+                    int remaining = unwrap_dst.remaining();
                     while (remaining > 0) {
                         // noinspection resource
-                        int write = unwrap_dst_pipe.sink().write(buf);
+                        int write = unwrap_dst_pipe.sink().write(unwrap_dst);
                         remaining -= write;
                         totalResult += write;
                     }
                 }
-                buf.clear();
+                unwrap_dst.clear();
                 status = result.getStatus();
 
                 if (status == Status.BUFFER_UNDERFLOW) {
@@ -159,15 +160,15 @@ public class SslClientChannel {
                         unwrap_src = realloc(unwrap_src, false, BufType.PACKET);
                     }
                 } else if (status == Status.BUFFER_OVERFLOW) {
-                    buf = realloc(buf, true, BufType.APPLICATION);
+                    unwrap_dst = realloc(unwrap_dst, true, BufType.APPLICATION);
                 } else if (status == Status.CLOSED) {
                     engineClosed = true;
                     return result;
                 }
                 unwrap_src.compact();
-            } while (status != Status.OK || channelClosed && unwrap_src.position() != unwrap_src.capacity());
+            } while (status != Status.OK || channelClosed && unwrap_src.hasRemaining());
         }
-
+        allocator.free(unwrap_dst);
         if (result.getHandshakeStatus() == HandshakeStatus.FINISHED) {
             this.handshakingFinished = true;
             System.out.println("handshake success");
@@ -189,9 +190,9 @@ public class SslClientChannel {
                 b.flip();
             }
             n.put(b);
-            b = n;
+            allocator.free(b);
+            return n;
         }
-        return b;
     }
 
     private void checkHandshaking() throws IOException {
@@ -207,7 +208,6 @@ public class SslClientChannel {
                         while ((task = engine.getDelegatedTask()) != null) {
                             task.run();
                         }
-                        /* fall thru - call wrap again */
                     case NEED_WRAP:
                         result = doWrapAndSend();
                         break;

@@ -12,8 +12,6 @@ import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 
 public class NioSSLExample {
     public static void main(String[] args) throws Exception {
@@ -26,11 +24,6 @@ public class NioSSLExample {
 
         SelectionKey key = channel.register(selector, ops);
 
-        // create the worker threads
-        final Executor ioWorker = Executors.newSingleThreadExecutor();
-        final Executor taskWorkers = Executors.newFixedThreadPool(2);
-
-        // create the SSLEngine
         final SSLEngine engine = SSLContext.getDefault().createSSLEngine();
         engine.setUseClientMode(true);
         engine.beginHandshake();
@@ -79,7 +72,7 @@ public class NioSSLExample {
                 while (read(decrypted) > 0) {
                     decrypted.flip();
                     if (decrypted.hasRemaining()) {
-                        byte[] array = toArray(decrypted);
+                        byte[] array = ByteBufferUtil.readToArray(decrypted);
                         bytes.add(array);
                         size += array.length;
                     }
@@ -104,20 +97,6 @@ public class NioSSLExample {
             }
         }
     }
-
-    private static void print(ByteBuffer decrypted) {
-        byte[] dst = toArray(decrypted);
-        String response = new String(dst);
-        System.out.print(response);
-        System.out.flush();
-    }
-
-    private static byte[] toArray(ByteBuffer decrypted) {
-        byte[] dst = new byte[decrypted.remaining()];
-        decrypted.get(dst);
-        return dst;
-    }
-
 
 
 }

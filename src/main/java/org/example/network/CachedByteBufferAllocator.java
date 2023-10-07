@@ -12,27 +12,28 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
-public class CachedBufferAllocator implements ByteBufferAllocator, AutoCloseable {
+public class CachedByteBufferAllocator implements ByteBufferAllocator {
 
-    private static final Logger logger = Logger.getLogger(CachedBufferAllocator.class.getName());
+    private static final Logger logger = Logger.getLogger(CachedByteBufferAllocator.class.getName());
 
     private final Map<Integer, Cache> cacheMap = new ConcurrentHashMap<>();
     private final ByteBufferAllocator target;
     private long expirationInterval = Duration.ofMinutes(10).toMillis();
     private int maxCacheSize = 2048;
     private volatile boolean closed = false;
+    private int minCacheCapacity = 256;
 
     {
         Thread.startVirtualThread(this::clearExpired);
     }
 
 
-    public CachedBufferAllocator(ByteBufferAllocator target) {
+    public CachedByteBufferAllocator(ByteBufferAllocator target) {
         this.target = target;
     }
 
     public static ByteBufferAllocator heap() {
-        return new CachedBufferAllocator(new HeapBufferAllocator());
+        return new CachedByteBufferAllocator(new HeapByteBufferAllocator());
     }
 
     @Override
@@ -48,7 +49,7 @@ public class CachedBufferAllocator implements ByteBufferAllocator, AutoCloseable
         }
         int capacity = buffer.capacity();
         Cache cache = cacheMap.computeIfAbsent(capacity, k -> new Cache());
-        if (!closed && cache.size() < maxCacheSize) {
+        if (!closed && capacity >= minCacheCapacity && cache.size() < maxCacheSize) {
             cache.put(buffer, System.currentTimeMillis() + expirationInterval);
         } else {
             target.free(buffer);
@@ -71,8 +72,12 @@ public class CachedBufferAllocator implements ByteBufferAllocator, AutoCloseable
         this.maxCacheSize = maxCacheSize;
     }
 
-    private BufWrap wrap(ByteBuffer buffer) {
-        return new BufWrap(buffer, System.currentTimeMillis() + expirationInterval);
+    public int getMinCacheCapacity() {
+        return minCacheCapacity;
+    }
+
+    public void setMinCacheCapacity(int minCacheCapacity) {
+        this.minCacheCapacity = minCacheCapacity;
     }
 
     @Override
