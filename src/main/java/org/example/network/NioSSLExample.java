@@ -35,7 +35,7 @@ public class NioSSLExample {
         engine.setUseClientMode(true);
         engine.beginHandshake();
         final int ioBufferSize = 32 * 1024;
-        final NioSSLProvider ssl = new NioSSLProvider(key, engine, ioBufferSize, ioWorker, taskWorkers) {
+        final NioSSLProvider ssl = new NioSSLProvider(key, engine, ioBufferSize) {
             @Override
             public void onFailure(Exception ex) {
                 System.out.println("handshake failure");
