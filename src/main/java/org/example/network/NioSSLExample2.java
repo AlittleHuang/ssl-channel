@@ -29,7 +29,7 @@ public class NioSSLExample2 {
         // create the SSLEngine
         final SSLEngine engine = SSLContext.getDefault().createSSLEngine();
         engine.setUseClientMode(true);
-        SslClientChannel sslPipe = new SslClientChannel(CachedByteBufferAllocator.heap(), channel, engine);
+        SslClientChannel sslPipe = new SslClientChannel(CachedByteBufferAllocator.globalHeap(), channel, engine);
         String req = """
                 GET / HTTP/1.0\r
                 Connection: close\r
@@ -41,10 +41,8 @@ public class NioSSLExample2 {
         int totalBytes = 0;
         // NIO selector
         while (true) {
-            // noinspection resource
-            key.selector().select();
-            // noinspection resource
-            Iterator<SelectionKey> keys = key.selector().selectedKeys().iterator();
+            selector.select();
+            Iterator<SelectionKey> keys = selector.selectedKeys().iterator();
             int read = 0;
             while (keys.hasNext()) {
                 keys.next();

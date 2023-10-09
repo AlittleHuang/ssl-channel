@@ -1,70 +1,137 @@
-package org.example.network;
+package org.example.network.channel.handler;
 
 
+import org.example.network.channel.SelectorService;
+
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLEngineResult.Status;
 import javax.net.ssl.SSLSession;
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.Pipe;
-import java.nio.channels.Pipe.SourceChannel;
+import java.nio.channels.SelectableChannel;
+import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.logging.Logger;
 
-public class SslClientChannel {
+public class SslChannelHandler implements ChannelHandler {
 
-    private final ByteBufferAllocator allocator;
+    private static final Logger logger = Logger
+            .getLogger(SslChannelHandler.class.getName());
+
     private final SocketChannel channel;
     private final SSLEngine engine;
     private final Object wrapLock = new Object(), unwrapLock = new Object();
-    private ByteBuffer unwrap_src, wrap_dst;
+    private final int ops;
+    private ByteBuffer unwrap_src;
     private final Pipe wrap_src_pipe, unwrap_dst_pipe;
     private boolean engineClosed = false;
     private boolean channelClosed = false;
 
     private int app_buf_size;
     private int packet_buf_size;
-    private int totalResult = 0;
+
+    private final SelectorKeyHandler handler;
 
     Lock handshaking = new ReentrantLock();
 
     private boolean handshakingFinished;
+    private SelectorService service;
 
-    public SslClientChannel(ByteBufferAllocator allocator, SocketChannel channel, SSLEngine engine) {
-        this.allocator = allocator;
-        this.channel = channel;
-        this.engine = engine;
-        this.unwrap_src = allocate(BufType.PACKET);
-        this.wrap_dst = allocate(BufType.PACKET);
-        this.wrap_src_pipe = openPipe();
-        this.unwrap_dst_pipe = openPipe();
+    public static SslChannelHandler clientChannel(SocketAddress address,
+                                                  SelectorKeyHandler handler)
+            throws IOException {
+        SSLEngine sslEngine;
+        try {
+            sslEngine = SSLContext.getDefault().createSSLEngine();
+            sslEngine.setUseClientMode(true);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
+        SocketChannel ch = SocketChannel.open();
+        ch.configureBlocking(false);
+        ch.connect(address);
+        int ops = SelectionKey.OP_READ | SelectionKey.OP_WRITE;
+        return new SslChannelHandler(sslEngine, ch, ops, handler);
     }
 
+    public SslChannelHandler(SSLEngine engine,
+                             SocketChannel channel,
+                             int ops,
+                             SelectorKeyHandler handler) {
+        this.channel = channel;
+        this.engine = engine;
+        this.handler = handler;
+        this.wrap_src_pipe = openPipe();
+        this.unwrap_dst_pipe = openPipe();
+        this.ops = ops;
+    }
+
+
+    @Override
+    public void init(SelectorService service) throws IOException {
+        this.service = service;
+        this.unwrap_src = allocate(BufType.PACKET);
+        register(wrap_src_pipe.sink(), ops, handler);
+        register(unwrap_dst_pipe.source(), ops, handler);
+    }
+
+    @Override
+    public SelectableChannel channel() {
+        return channel;
+    }
+
+    @Override
+    public int registerOps() {
+        return channel.validOps();
+    }
+
+    @Override
+    public void handler(SelectionKey key) throws IOException {
+        try {
+            doHandler(key);
+        } catch (Exception e) {
+            channel.close();
+            closePipes();
+            throw e;
+        }
+    }
+
+    private void doHandler(SelectionKey key) throws IOException {
+        if (key.isConnectable()) {
+            channel.finishConnect();
+        } else if (key.isReadable()) {
+            checkHandshaking();
+            receiveAndUnwrap();
+        } else if (key.isWritable()) {
+            checkHandshaking();
+            wrapAndWrite();
+        }
+    }
+
+    @SuppressWarnings("resource")
     private static Pipe openPipe() {
         try {
             Pipe open = Pipe.open();
-            // noinspection resource
             open.source().configureBlocking(false);
+            open.sink().configureBlocking(false);
             return open;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public void write(ByteBuffer wrap) throws IOException {
-        checkHandshaking();
-        // noinspection resource
-        wrap_src_pipe.sink().write(wrap);
-        if (channel.isConnected()) {
-            wrapAndWrite();
-        }
-    }
-
     private void wrapAndWrite() throws IOException {
-        doWrapAndSend();
+        if (!isClosed()) {
+            doWrapAndSend();
+        }
     }
 
     private SSLEngineResult doWrapAndSend() throws IOException {
@@ -74,6 +141,7 @@ public class SslClientChannel {
         Status status;
         SSLEngineResult result;
         ByteBuffer wrap_src = allocate(BufType.APPLICATION);
+        ByteBuffer wrap_dst = allocate(BufType.PACKET);
         synchronized (wrapLock) {
             wrap_dst.clear();
             do {
@@ -98,33 +166,28 @@ public class SslClientChannel {
                 assert l == result.bytesProduced();
                 while (l > 0) {
                     int write = channel.write(wrap_dst);
-                    System.out.println("write:" + write);
+                    logger.fine(() -> "write: " + write + "bytes");
                     l -= write;
                 }
             }
         }
-        allocator.free(wrap_src);
+        free(wrap_src);
+        free(wrap_dst);
         return result;
-    }
-
-    public int read(ByteBuffer buffer) throws IOException {
-        if (!isClosed()) {
-            checkHandshaking();
-            receiveAndUnwrap();
-        }
-        SourceChannel source = unwrap_dst_pipe.source();
-        int read = source.read(buffer);
-        if (isClosed() && read == 0) {
-            read = -1;
-        }
-        return read;
     }
 
     private boolean isClosed() {
         return channelClosed && engineClosed;
     }
 
-    private SSLEngineResult receiveAndUnwrap() throws IOException {
+
+    private void receiveAndUnwrap() throws IOException {
+        if (!isClosed()) {
+            doReceiveAndUnwrap();
+        }
+    }
+
+    private SSLEngineResult doReceiveAndUnwrap() throws IOException {
         if (engineClosed) {
             throw new IOException("Engine is closed");
         }
@@ -139,7 +202,7 @@ public class SslClientChannel {
                         channelClosed = true;
                     }
                     if (read != 0) {
-                        System.out.println("read:" + read);
+                        logger.fine(() -> "read:" + read + "bytes");
                     }
                 }
                 unwrap_src.flip();
@@ -151,7 +214,6 @@ public class SslClientChannel {
                         // noinspection resource
                         int write = unwrap_dst_pipe.sink().write(unwrap_dst);
                         remaining -= write;
-                        totalResult += write;
                     }
                 }
                 unwrap_dst.clear();
@@ -165,37 +227,25 @@ public class SslClientChannel {
                     unwrap_dst = realloc(unwrap_dst, true, BufType.APPLICATION);
                 } else if (status == Status.CLOSED) {
                     engineClosed = true;
-                    return result;
+                    break;
                 }
                 unwrap_src.compact();
-            } while (status != Status.OK || channelClosed && unwrap_src.hasRemaining());
+            } while (channelClosed ? unwrap_src.position() > 0 : status != Status.OK);
         }
-        allocator.free(unwrap_dst);
+        free(unwrap_dst);
         if (result.getHandshakeStatus() == HandshakeStatus.FINISHED) {
             this.handshakingFinished = true;
-            System.out.println("handshake success");
+            logger.fine(() -> "handshake success");
             wrapAndWrite();
         }
 
         if (isClosed()) {
-            wrap_src_pipe.sink().close();
+            closePipes();
         }
 
         return result;
     }
 
-    private ByteBuffer realloc(ByteBuffer b, boolean flip, BufType type) {
-        synchronized (this) {
-            int nsz = 2 * b.capacity();
-            ByteBuffer n = allocate(type, nsz);
-            if (flip) {
-                b.flip();
-            }
-            n.put(b);
-            allocator.free(b);
-            return n;
-        }
-    }
 
     private void checkHandshaking() throws IOException {
         if (handshakingFinished || !channel.isConnected()) {
@@ -219,7 +269,7 @@ public class SslClientChannel {
                         break;
 
                     case NEED_UNWRAP:
-                        result = receiveAndUnwrap();
+                        result = doReceiveAndUnwrap();
                         break;
                 }
                 if (result != null) {
@@ -236,9 +286,26 @@ public class SslClientChannel {
         PACKET, APPLICATION
     }
 
+    private void free(ByteBuffer wrap_src) {
+        service.getAllocator().free(wrap_src);
+    }
 
     private ByteBuffer allocate(BufType type) {
         return allocate(type, -1);
+    }
+
+
+    private ByteBuffer realloc(ByteBuffer b, boolean flip, BufType type) {
+        synchronized (this) {
+            int nsz = 2 * b.capacity();
+            ByteBuffer n = allocate(type, nsz);
+            if (flip) {
+                b.flip();
+            }
+            n.put(b);
+            free(b);
+            return n;
+        }
     }
 
     private ByteBuffer allocate(BufType type, int len) {
@@ -264,11 +331,34 @@ public class SslClientChannel {
                 }
                 size = app_buf_size;
             }
-            return allocator.allocate(size);
+            return service.getAllocator().allocate(size);
         }
     }
 
-    public int getTotalResult() {
-        return totalResult;
+    private void register(SelectableChannel ch,
+                          int ops,
+                          SelectorKeyHandler handler)
+            throws IOException {
+        service.register(ch, ops & ch.validOps(), handler);
     }
+
+    private void closePipes() throws IOException {
+        close(unwrap_dst_pipe);
+        close(wrap_src_pipe);
+    }
+
+    private void close(Pipe pipe) throws IOException {
+        handlerAndClose(pipe.sink());
+        handlerAndClose(pipe.source());
+    }
+
+    private void handlerAndClose(SelectableChannel channel) throws IOException {
+        SelectionKey key = channel.keyFor(service.getSelector());
+        if (key != null) {
+            handler.handler(key);
+        }
+        channel.close();
+    }
+
+
 }

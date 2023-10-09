@@ -15,6 +15,7 @@ import java.util.logging.Logger;
 public class CachedByteBufferAllocator implements ByteBufferAllocator {
 
     private static final Logger logger = Logger.getLogger(CachedByteBufferAllocator.class.getName());
+    public static final CachedByteBufferAllocator HEAP = new CachedByteBufferAllocator(new HeapByteBufferAllocator());
 
     private final Map<Integer, Cache> cacheMap = new ConcurrentHashMap<>();
     private final ByteBufferAllocator target;
@@ -32,8 +33,8 @@ public class CachedByteBufferAllocator implements ByteBufferAllocator {
         this.target = target;
     }
 
-    public static ByteBufferAllocator heap() {
-        return new CachedByteBufferAllocator(new HeapByteBufferAllocator());
+    public static ByteBufferAllocator globalHeap() {
+        return HEAP;
     }
 
     @Override
