@@ -1,4 +1,6 @@
-package org.example.network;
+package org.example.network.buf;
+
+import org.example.network.buf.ByteBufferAllocator;
 
 import java.nio.ByteBuffer;
 

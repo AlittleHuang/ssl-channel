@@ -1,4 +1,4 @@
-package org.example.network;
+package org.example.network.buf;
 
 import java.nio.ByteBuffer;
 import java.util.Base64;
@@ -21,6 +21,10 @@ public class ByteBufferUtil {
         byte[] dst = new byte[buffer.remaining()];
         buffer.get(dst);
         return dst;
+    }
+
+    public static String readToString(ByteBuffer buffer) {
+        return new String(readToArray(buffer));
     }
 
 }

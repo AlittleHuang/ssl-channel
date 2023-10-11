@@ -1,7 +1,7 @@
 package org.example.network.channel;
 
-import org.example.network.ByteBufferAllocator;
-import org.example.network.CachedByteBufferAllocator;
+import org.example.network.buf.ByteBufferAllocator;
+import org.example.network.buf.CachedByteBufferAllocator;
 import org.example.network.channel.handler.ChannelHandler;
 import org.example.network.channel.handler.SelectorKeyHandler;
 

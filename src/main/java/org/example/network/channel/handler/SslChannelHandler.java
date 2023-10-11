@@ -69,8 +69,8 @@ public class SslChannelHandler implements ChannelHandler {
         this.channel = channel;
         this.engine = engine;
         this.handler = handler;
-        this.wrap_src_pipe = openPipe();
-        this.unwrap_dst_pipe = openPipe();
+        this.wrap_src_pipe = openNoneBolckingPipe();
+        this.unwrap_dst_pipe = openNoneBolckingPipe();
         this.ops = ops;
     }
 
@@ -117,7 +117,7 @@ public class SslChannelHandler implements ChannelHandler {
     }
 
     @SuppressWarnings("resource")
-    private static Pipe openPipe() {
+    private static Pipe openNoneBolckingPipe() {
         try {
             Pipe open = Pipe.open();
             open.source().configureBlocking(false);
