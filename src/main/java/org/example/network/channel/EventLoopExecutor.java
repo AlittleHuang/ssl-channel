@@ -55,8 +55,7 @@ public class EventLoopExecutor implements AutoCloseable {
     }
 
     public static EventLoopExecutor open(Selector selector) {
-        int nThreads = Runtime.getRuntime().availableProcessors();
-        ExecutorService executor = Executors.newFixedThreadPool(nThreads);
+        ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
         return new EventLoopExecutor(selector, executor).start();
     }
 

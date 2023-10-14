@@ -37,14 +37,17 @@ public class TcpServer {
         executor.register(channel, SelectionKey.OP_ACCEPT, key -> {
             if (key.isAcceptable()) {
                 SocketChannel child = channel.accept();
+                if (child == null) {
+                    return;
+                }
                 child.configureBlocking(false);
                 Pipeline pipeline = new Pipeline(child);
                 pipeline.addFirst(config.handler);
 
-                TcpPipeHandler handler = new TcpPipeHandler(
+                TcpConnection connection = new TcpConnection(
                         pipeline, child, bufCapacity
                 );
-                executor.register(handler);
+                executor.register(connection);
             }
         });
         InetSocketAddress address = new InetSocketAddress(config.host, config.port);

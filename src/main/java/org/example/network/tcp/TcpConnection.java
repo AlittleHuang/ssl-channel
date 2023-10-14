@@ -11,13 +11,13 @@ import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
-class TcpPipeHandler implements SelectionKeyHandler {
+class TcpConnection implements SelectionKeyHandler {
 
     final Pipeline pipeline;
     final SocketChannel channel;
     final int bufCapacity;
 
-    TcpPipeHandler(Pipeline pipeline, SocketChannel channel, int bufCapacity) {
+    TcpConnection(Pipeline pipeline, SocketChannel channel, int bufCapacity) {
         this.pipeline = pipeline;
         this.channel = channel;
         this.bufCapacity = bufCapacity;

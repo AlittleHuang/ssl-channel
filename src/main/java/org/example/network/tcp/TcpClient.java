@@ -13,9 +13,7 @@ import java.util.Objects;
 public class TcpClient {
 
     private final EventLoopExecutor executor;
-    private final TcpPipeHandler handler;
-    private final SocketChannel channel;
-    private final int bufCapacity;
+    private final TcpConnection connection;
 
 
     public TcpClient(Config config) throws IOException {
@@ -28,15 +26,15 @@ public class TcpClient {
         if (executor.getStatus() == EventLoopExecutor.STATUS_READY) {
             executor.start();
         }
-        channel = SocketChannel.open();
+        SocketChannel channel = SocketChannel.open();
         Pipeline pipeline = new Pipeline(channel);
         pipeline.addFirst(config.handler);
         channel.configureBlocking(false);
-        bufCapacity = config.bufCapacity <= 0 ? 1024 * 8 : config.bufCapacity;
-        handler = new TcpPipeHandler(
+        int bufCapacity = config.bufCapacity <= 0 ? 1024 * 8 : config.bufCapacity;
+        connection = new TcpConnection(
                 pipeline, channel, bufCapacity
         );
-        executor.register(handler);
+        executor.register(connection);
         InetSocketAddress address = new InetSocketAddress(config.host, config.port);
         channel.connect(address);
     }
@@ -46,15 +44,15 @@ public class TcpClient {
     }
 
     public Pipeline pipeline() {
-        return handler.pipeline;
+        return connection.pipeline;
     }
 
     public SocketChannel channel() {
-        return channel;
+        return connection.channel;
     }
 
     public int defaultBufCapacity() {
-        return bufCapacity;
+        return connection.bufCapacity;
     }
 
     public static TcpClient open(Config config) throws IOException {
