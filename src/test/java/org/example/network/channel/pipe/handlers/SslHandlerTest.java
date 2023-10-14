@@ -1,7 +1,7 @@
 package org.example.network.channel.pipe.handlers;
 
-import org.example.network.TpcClient;
-import org.example.network.TpcClient.Config;
+import org.example.network.tcp.TcpClient;
+import org.example.network.tcp.TcpClient.Config;
 import org.example.network.buf.ByteBufferUtil;
 import org.example.network.channel.EventLoopExecutor;
 import org.example.network.channel.pipe.PipeContext;
@@ -55,7 +55,7 @@ class SslHandlerTest {
         };
 
 
-        TpcClient client = new TpcClient(config);
+        TcpClient client = new TcpClient(config);
         Thread.sleep(1000);
         // client.pipeline().executor().close();
     }

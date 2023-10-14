@@ -91,6 +91,10 @@ public class Pipeline implements ByteBufferAllocator {
         return requiredRead;
     }
 
+    public void setRequiredRead(boolean requiredRead) {
+        this.requiredRead = requiredRead;
+    }
+
     public void setAutoRead(boolean autoRead) {
         this.autoRead = autoRead;
     }
