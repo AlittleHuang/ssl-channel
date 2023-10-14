@@ -1,8 +1,6 @@
 package org.example.network.channel;
 
 import org.example.concurrent.SingleThreadTask;
-import org.example.network.buf.ByteBufferAllocator;
-import org.example.network.buf.CachedByteBufferAllocator;
 import org.example.network.channel.handler.SelectionKeyHandler;
 import org.example.network.channel.handler.SelectionKeyHandlerFunction;
 import org.example.network.channel.handler.SelectionKeyHandlerImpl;
@@ -24,34 +22,43 @@ public class EventLoopExecutor implements AutoCloseable {
     private static final Logger logger = Logger
             .getLogger(EventLoopExecutor.class.getName());
 
+    private volatile static EventLoopExecutor DEFAULT;
+
 
     public static int STATUS_READY = 0;
     public static int STATUS_RUNNING = 1;
-    public static int STATUS_CLOSE = 0;
+    public static int STATUS_CLOSE = 2;
 
     private final Selector selector;
     private final AtomicInteger status = new AtomicInteger();
     private final Thread thread = new Thread(this::work);
     private final ExecutorService executorService;
 
-    public EventLoopExecutor(Selector selector) {
+    public EventLoopExecutor(Selector selector, ExecutorService executor) {
         this.selector = selector;
-        // this.allocator = CachedByteBufferAllocator.HEAP;
-        this.executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-    }
-
-    public EventLoopExecutor(Selector selector, ByteBufferAllocator allocator, ExecutorService executor) {
-        this.selector = selector;
-        // this.allocator = allocator;
         this.executorService = executor;
     }
 
-    public static EventLoopExecutor open() throws IOException {
+
+    public static EventLoopExecutor getDefault() throws IOException {
+        if (DEFAULT == null) {
+            synchronized (EventLoopExecutor.class) {
+                if (DEFAULT == null) {
+                    DEFAULT = open();
+                }
+            }
+        }
+        return DEFAULT;
+    }
+
+    private static EventLoopExecutor open() throws IOException {
         return open(Selector.open());
     }
 
     public static EventLoopExecutor open(Selector selector) {
-        return new EventLoopExecutor(selector).start();
+        int nThreads = Runtime.getRuntime().availableProcessors();
+        ExecutorService executor = Executors.newFixedThreadPool(nThreads);
+        return new EventLoopExecutor(selector, executor).start();
     }
 
     public void register(SelectionKeyHandler handler) throws IOException {
@@ -131,10 +138,6 @@ public class EventLoopExecutor implements AutoCloseable {
             }
         }
     }
-
-    // public ByteBufferAllocator getAllocator() {
-    //     return allocator;
-    // }
 
     public Selector getSelector() {
         return selector;

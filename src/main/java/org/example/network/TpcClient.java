@@ -10,7 +10,6 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Objects;
 
@@ -28,7 +27,7 @@ public class TpcClient {
         Objects.requireNonNull(config.handler, "config.handler");
         Objects.requireNonNull(config.host, "config.host");
         executor = config.executor == null
-                ? new EventLoopExecutor(Selector.open())
+                ? EventLoopExecutor.getDefault()
                 : config.executor;
         if (executor.getStatus() == EventLoopExecutor.STATUS_READY) {
             executor.start();
