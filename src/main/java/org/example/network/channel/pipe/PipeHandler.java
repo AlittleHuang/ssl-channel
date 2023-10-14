@@ -25,4 +25,8 @@ public interface PipeHandler {
     default void onClose(PipeContext ctx) throws IOException {
         ctx.fireClose();
     }
+
+    default void onError(PipeContext ctx, Throwable throwable) {
+        ctx.fireError(throwable);
+    }
 }

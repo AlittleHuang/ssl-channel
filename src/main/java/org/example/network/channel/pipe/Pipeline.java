@@ -61,8 +61,12 @@ public class Pipeline implements ByteBufferAllocator {
         head.onReceive(buffer);
     }
 
-    public void onWrite(ByteBuffer buffer) throws IOException {
+    public void write(ByteBuffer buffer) throws IOException {
         tail.onWrite(buffer);
+    }
+
+    public void onError(Throwable throwable) {
+        tail.onError(throwable);
     }
 
     public boolean isWritable() {
@@ -121,17 +125,27 @@ public class Pipeline implements ByteBufferAllocator {
         allocator.free(buffer);
     }
 
+    public void close() throws IOException {
+        tail.fireClose();
+    }
+
     class HeadHandler implements PipeHandler {
         @Override
         public void onWrite(PipeContext ctx, ByteBuffer buf) throws IOException {
             while (buf.hasRemaining()) {
                 channel.write(buf);
             }
+            ctx.free(buf);
         }
 
         @Override
         public void onClose(PipeContext ctx) throws IOException {
             channel.close();
+        }
+
+        @Override
+        public void onError(PipeContext ctx, Throwable throwable) {
+            throw new IllegalStateException(throwable);
         }
     }
 

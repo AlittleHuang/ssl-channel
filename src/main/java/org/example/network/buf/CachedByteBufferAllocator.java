@@ -48,6 +48,10 @@ public class CachedByteBufferAllocator implements ByteBufferAllocator, AutoClose
         if (buffer == null) {
             return;
         }
+        if (buffer.isReadOnly()) {
+            target.free(buffer);
+            return;
+        }
         int capacity = buffer.capacity();
         Cache cache = cacheMap.get(capacity);
         if (cache == null) {

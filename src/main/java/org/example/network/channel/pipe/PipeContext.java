@@ -49,5 +49,7 @@ public interface PipeContext {
     EventLoopExecutor executor();
 
     void replace(PipeHandler handler);
+
+    void fireError(Throwable throwable);
 }
 

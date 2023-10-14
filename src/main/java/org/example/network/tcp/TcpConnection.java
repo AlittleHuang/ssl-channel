@@ -40,6 +40,17 @@ class TcpConnection implements SelectionKeyHandler {
 
     @Override
     public void handler(SelectionKey key) throws IOException {
+        try {
+            doHandler(key);
+        } catch (Throwable e) {
+            pipeline.onError(e);
+        }
+    }
+
+    private void doHandler(SelectionKey key) throws IOException {
+        if (!key.isValid()) {
+            return;
+        }
         if (key.isConnectable()) {
             if (channel.finishConnect()) {
                 pipeline.connected();

@@ -127,6 +127,14 @@ public class PipeNode implements PipeContext {
         pre = next = null;
     }
 
+    @Override
+    public void fireError(Throwable throwable) {
+        PipeNode node = pre;
+        if (node != null) {
+            node.onError(throwable);
+        }
+    }
+
     private void onClose() throws IOException {
         handler.onClose(this);
     }
@@ -147,4 +155,7 @@ public class PipeNode implements PipeContext {
         handler.onConnected(this);
     }
 
+    public void onError(Throwable throwable) {
+        handler.onError(this, throwable);
+    }
 }

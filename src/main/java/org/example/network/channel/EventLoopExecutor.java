@@ -1,6 +1,6 @@
 package org.example.network.channel;
 
-import org.example.concurrent.SingleThreadTask;
+import org.example.concurrent.SelectionKeyHandlerTask;
 import org.example.network.channel.handler.SelectionKeyHandler;
 import org.example.network.channel.handler.SelectionKeyHandlerFunction;
 import org.example.network.channel.handler.SelectionKeyHandlerImpl;
@@ -76,14 +76,8 @@ public class EventLoopExecutor implements AutoCloseable {
                                    int ops,
                                    SelectionKeyHandlerFunction handler)
             throws IOException {
-        SelectionKey key = channel.register(selector, ops);
-        key.attach(new SingleThreadTask(executorService, () -> {
-            try {
-                handler.handler(key);
-            } catch (Exception e) {
-                logger.log(WARNING, e, () -> "handler " + key + " error");
-            }
-        }));
+        SelectionKeyHandlerTask task = new SelectionKeyHandlerTask(executorService, handler);
+        channel.register(selector, ops, task);
         selector.wakeup();
     }
 
@@ -125,11 +119,11 @@ public class EventLoopExecutor implements AutoCloseable {
             if (!key.isValid()) {
                 continue;
             }
-            if (key.attachment() instanceof SingleThreadTask task) {
-                task.wakeup();
+            if (key.attachment() instanceof SelectionKeyHandlerTask task) {
+                task.wakeup(key);
             } else {
-                key.interestOps(0);
                 logger.log(WARNING, () -> key + " miss handler");
+                key.channel().close();
             }
             if (getStatus() == STATUS_CLOSE) {
                 key.cancel();
