@@ -12,7 +12,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
-public class CachedByteBufferAllocator implements ByteBufferAllocator {
+public class CachedByteBufferAllocator implements ByteBufferAllocator, AutoCloseable {
 
     private static final Logger logger = Logger.getLogger(CachedByteBufferAllocator.class.getName());
     public static final CachedByteBufferAllocator HEAP = new CachedByteBufferAllocator(new HeapByteBufferAllocator());

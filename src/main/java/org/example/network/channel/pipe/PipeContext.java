@@ -15,6 +15,8 @@ public interface PipeContext {
 
     PipeContext addLast(PipeHandler handler);
 
+    Pipeline pipeline();
+
     void fireReceive(ByteBuffer buf) throws IOException;
 
     void fireWrite(ByteBuffer buf) throws IOException;
@@ -26,7 +28,7 @@ public interface PipeContext {
         if (executor == null) {
             return ByteBuffer.allocate(capacity);
         }
-        return executor.getAllocator().allocate(capacity);
+        return pipeline().allocate(capacity);
     }
 
 
@@ -34,7 +36,7 @@ public interface PipeContext {
         // noinspection resource
         EventLoopExecutor executor = executor();
         if (executor != null) {
-            executor.getAllocator().free(buf);
+            pipeline().free(buf);
         }
     }
 

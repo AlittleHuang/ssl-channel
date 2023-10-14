@@ -24,27 +24,25 @@ public class EventLoopExecutor implements AutoCloseable {
     private static final Logger logger = Logger
             .getLogger(EventLoopExecutor.class.getName());
 
-    // 多线程
 
     public static int STATUS_READY = 0;
     public static int STATUS_RUNNING = 1;
     public static int STATUS_CLOSE = 0;
 
     private final Selector selector;
-    private final ByteBufferAllocator allocator;
     private final AtomicInteger status = new AtomicInteger();
     private final Thread thread = new Thread(this::work);
     private final ExecutorService executorService;
 
     public EventLoopExecutor(Selector selector) {
         this.selector = selector;
-        this.allocator = CachedByteBufferAllocator.HEAP;
+        // this.allocator = CachedByteBufferAllocator.HEAP;
         this.executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     }
 
     public EventLoopExecutor(Selector selector, ByteBufferAllocator allocator, ExecutorService executor) {
         this.selector = selector;
-        this.allocator = allocator;
+        // this.allocator = allocator;
         this.executorService = executor;
     }
 
@@ -134,9 +132,9 @@ public class EventLoopExecutor implements AutoCloseable {
         }
     }
 
-    public ByteBufferAllocator getAllocator() {
-        return allocator;
-    }
+    // public ByteBufferAllocator getAllocator() {
+    //     return allocator;
+    // }
 
     public Selector getSelector() {
         return selector;

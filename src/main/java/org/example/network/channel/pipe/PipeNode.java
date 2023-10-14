@@ -58,6 +58,11 @@ public class PipeNode implements PipeContext {
         return pipeline.addLast(handler);
     }
 
+    @Override
+    public Pipeline pipeline() {
+        return pipeline;
+    }
+
     public static void link(PipeNode... nodes) {
         for (int i = 1; i < nodes.length; i++) {
             PipeNode pre = nodes[i - 1];

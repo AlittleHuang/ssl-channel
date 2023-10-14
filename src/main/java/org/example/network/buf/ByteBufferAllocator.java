@@ -2,7 +2,7 @@ package org.example.network.buf;
 
 import java.nio.ByteBuffer;
 
-public interface ByteBufferAllocator extends AutoCloseable {
+public interface ByteBufferAllocator {
 
     ByteBuffer allocate(int capacity);
 

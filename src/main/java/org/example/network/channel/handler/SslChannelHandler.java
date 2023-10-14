@@ -1,6 +1,8 @@
 package org.example.network.channel.handler;
 
 
+import org.example.network.buf.ByteBufferAllocator;
+import org.example.network.buf.CachedByteBufferAllocator;
 import org.example.network.channel.EventLoopExecutor;
 
 import javax.net.ssl.SSLContext;
@@ -43,6 +45,9 @@ public class SslChannelHandler implements SelectionKeyHandler {
     Lock handshaking = new ReentrantLock();
 
     private boolean handshakingFinished;
+
+    private final ByteBufferAllocator allocator;
+
     private EventLoopExecutor service;
 
     public static SslChannelHandler clientChannel(SocketAddress address,
@@ -72,6 +77,7 @@ public class SslChannelHandler implements SelectionKeyHandler {
         this.wrap_src_pipe = openNoneBolckingPipe();
         this.unwrap_dst_pipe = openNoneBolckingPipe();
         this.ops = ops;
+        allocator = CachedByteBufferAllocator.globalHeap();
     }
 
 
@@ -287,7 +293,7 @@ public class SslChannelHandler implements SelectionKeyHandler {
     }
 
     private void free(ByteBuffer wrap_src) {
-        service.getAllocator().free(wrap_src);
+        allocator.free(wrap_src);
     }
 
     private ByteBuffer allocate(BufType type) {
@@ -331,7 +337,7 @@ public class SslChannelHandler implements SelectionKeyHandler {
                 }
                 size = app_buf_size;
             }
-            return service.getAllocator().allocate(size);
+            return allocator.allocate(size);
         }
     }
 

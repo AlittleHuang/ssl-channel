@@ -92,12 +92,12 @@ public class TpcClient {
                 key.interestOps(SelectionKey.OP_READ);
             }
             if (key.isReadable() && (pipeline.isAutoRead() || pipeline.isRequiredRead())) {
-                ByteBuffer buf = executor.getAllocator().allocate(bufCapacity);
+                ByteBuffer buf = pipeline().allocate(bufCapacity);
                 int read;
                 while ((read = channel.read(buf)) > 0) {
                     if (buf.position() == buf.limit()) {
                         pipeline.onReceive(buf.flip());
-                        buf = executor.getAllocator().allocate(bufCapacity);
+                        buf = pipeline().allocate(bufCapacity);
                     }
                 }
                 if (buf.flip().hasRemaining()) {

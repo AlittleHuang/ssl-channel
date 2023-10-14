@@ -1,5 +1,7 @@
 package org.example.network.channel.pipe;
 
+import org.example.network.buf.ByteBufferAllocator;
+import org.example.network.buf.CachedByteBufferAllocator;
 import org.example.network.channel.EventLoopExecutor;
 
 import java.io.IOException;
@@ -14,9 +16,11 @@ import java.nio.channels.WritableByteChannel;
  * head - 1 - 2 - 3 - ... - tail
  * </pre>
  */
-public class Pipeline {
+public class Pipeline implements ByteBufferAllocator {
 
     private final WritableByteChannel channel;
+
+    private final ByteBufferAllocator allocator;
 
     private final PipeNode head;
 
@@ -33,6 +37,7 @@ public class Pipeline {
 
     public Pipeline(WritableByteChannel channel) {
         this.channel = channel;
+        this.allocator = CachedByteBufferAllocator.globalHeap();
         this.head = node(new HeadHandler());
         this.tail = node(new TailHandler());
         PipeNode.link(head, tail);
@@ -100,6 +105,16 @@ public class Pipeline {
 
     public EventLoopExecutor executor() {
         return executor;
+    }
+
+    @Override
+    public ByteBuffer allocate(int capacity) {
+        return allocator.allocate(capacity);
+    }
+
+    @Override
+    public void free(ByteBuffer buffer) {
+        allocator.free(buffer);
     }
 
     class HeadHandler implements PipeHandler {
