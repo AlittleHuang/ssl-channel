@@ -1,6 +1,7 @@
 package org.example.network.channel.pipe;
 
-import lombok.Getter;
+
+import org.example.network.channel.EventLoopExecutor;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -10,7 +11,6 @@ public class PipeNode implements PipeContext {
 
     private static final AtomicLong ids = new AtomicLong();
 
-    @Getter
     private final long id = ids.incrementAndGet();
 
     private final Pipeline pipeline;
@@ -25,21 +25,26 @@ public class PipeNode implements PipeContext {
     public PipeNode(Pipeline pipeline, PipeHandler handler) {
         this.pipeline = pipeline;
         this.handler = handler;
-        handler.init(this);
     }
 
+    public void init() {
+        handler.init(this);
+    }
 
     @Override
     public PipeContext addBefore(PipeHandler handler) {
         PipeNode node = new PipeNode(pipeline, handler);
         link(pre, node, this);
+        node.init();
         return node;
     }
+
 
     @Override
     public PipeContext addAfter(PipeHandler handler) {
         PipeNode node = new PipeNode(pipeline, handler);
         link(this, node, next);
+        node.init();
         return node;
     }
 
@@ -67,7 +72,7 @@ public class PipeNode implements PipeContext {
     }
 
     @Override
-    public void fireReceive(ByteBuffer buf) {
+    public void fireReceive(ByteBuffer buf) throws IOException {
         PipeNode node = next;
         if (node != null) {
             node.onReceive(buf);
@@ -96,7 +101,36 @@ public class PipeNode implements PipeContext {
         pre = next = null;
     }
 
-    public void onReceive(ByteBuffer buf) {
+    @Override
+    public void fireClose() throws IOException {
+        PipeNode node = pre;
+        if (node != null) {
+            node.onClose();
+        }
+    }
+
+    @Override
+    public EventLoopExecutor executor() {
+        return pipeline.executor();
+    }
+
+    @Override
+    public void replace(PipeHandler handler) {
+        PipeNode node = new PipeNode(pipeline, handler);
+        link(pre, node, next);
+        node.init();
+        pre = next = null;
+    }
+
+    private void onClose() throws IOException {
+        handler.onClose(this);
+    }
+
+    public long getId() {
+        return id;
+    }
+
+    public void onReceive(ByteBuffer buf) throws IOException {
         handler.onReceive(this, buf);
     }
 

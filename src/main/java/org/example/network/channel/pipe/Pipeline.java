@@ -1,5 +1,7 @@
 package org.example.network.channel.pipe;
 
+import org.example.network.channel.EventLoopExecutor;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
@@ -14,16 +16,25 @@ import java.nio.channels.WritableByteChannel;
  */
 public class Pipeline {
 
+    private final WritableByteChannel channel;
+
     private final PipeNode head;
 
     private final PipeNode tail;
 
     private boolean writable;
 
+    private boolean autoRead = true;
+
+    private boolean requiredRead;
+
+    private EventLoopExecutor executor;
+
 
     public Pipeline(WritableByteChannel channel) {
-        head = outbound((context, buf) -> channel.write(buf));
-        tail = inbound(new TailHandler());
+        this.channel = channel;
+        this.head = node(new HeadHandler());
+        this.tail = node(new TailHandler());
         PipeNode.link(head, tail);
     }
 
@@ -36,16 +47,12 @@ public class Pipeline {
         return tail.addBefore(handler);
     }
 
-    public PipeNode outbound(PipeWriteHandler handler) {
-        return new PipeNode(this, handler);
-    }
-
-    public PipeNode inbound(PipeReadHandler handler) {
+    public PipeNode node(PipeHandler handler) {
         return new PipeNode(this, handler);
     }
 
 
-    public void onReceive(ByteBuffer buffer) {
+    public void onReceive(ByteBuffer buffer) throws IOException {
         head.onReceive(buffer);
     }
 
@@ -65,12 +72,59 @@ public class Pipeline {
         head.onConnect();
     }
 
-    static class TailHandler implements PipeReadHandler {
+    public WritableByteChannel getChannel() {
+        return channel;
+    }
+
+    public void read() {
+        if (!autoRead) {
+            requiredRead = true;
+        }
+    }
+
+    public boolean isRequiredRead() {
+        return requiredRead;
+    }
+
+    public void setAutoRead(boolean autoRead) {
+        this.autoRead = autoRead;
+    }
+
+    public boolean isAutoRead() {
+        return autoRead;
+    }
+
+    public void executor(EventLoopExecutor executor) {
+        this.executor = executor;
+    }
+
+    public EventLoopExecutor executor() {
+        return executor;
+    }
+
+    class HeadHandler implements PipeHandler {
+        @Override
+        public void onWrite(PipeContext ctx, ByteBuffer buf) throws IOException {
+            while (buf.hasRemaining()) {
+                channel.write(buf);
+            }
+        }
 
         @Override
-        public void onReceive(PipeContext context, ByteBuffer buf) {
-            context.free(buf);
+        public void onClose(PipeContext ctx) throws IOException {
+            channel.close();
         }
+    }
+
+
+    static class TailHandler implements PipeHandler {
+
+        @Override
+        public void onReceive(PipeContext ctx, ByteBuffer buf) {
+            ctx.free(buf);
+        }
+
+
     }
 }
 

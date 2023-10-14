@@ -2,7 +2,7 @@ package org.example.network;
 
 
 import org.example.network.buf.ByteBufferUtil;
-import org.example.network.channel.SelectorService;
+import org.example.network.channel.EventLoopExecutor;
 import org.example.network.channel.handler.SslChannelHandler;
 
 import java.net.InetSocketAddress;
@@ -19,7 +19,7 @@ public class NioSSLExample3 {
         InetSocketAddress address = new InetSocketAddress("www.baidu.com", 443);
         Selector selector = Selector.open();
         SocketChannel channel = SocketChannel.open();
-        SelectorService service = SelectorService.start(selector);
+        EventLoopExecutor service = EventLoopExecutor.start(selector);
         channel.configureBlocking(false);
 
         int ops = SelectionKey.OP_WRITE | SelectionKey.OP_READ;

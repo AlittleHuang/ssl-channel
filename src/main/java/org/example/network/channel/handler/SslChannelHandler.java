@@ -1,7 +1,7 @@
 package org.example.network.channel.handler;
 
 
-import org.example.network.channel.SelectorService;
+import org.example.network.channel.EventLoopExecutor;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -21,7 +21,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 
-public class SslChannelHandler implements ChannelHandler {
+public class SslChannelHandler implements SelectionKeyHandler {
 
     private static final Logger logger = Logger
             .getLogger(SslChannelHandler.class.getName());
@@ -38,15 +38,15 @@ public class SslChannelHandler implements ChannelHandler {
     private int app_buf_size;
     private int packet_buf_size;
 
-    private final SelectorKeyHandler handler;
+    private final SelectionKeyHandlerFunctiom handler;
 
     Lock handshaking = new ReentrantLock();
 
     private boolean handshakingFinished;
-    private SelectorService service;
+    private EventLoopExecutor service;
 
     public static SslChannelHandler clientChannel(SocketAddress address,
-                                                  SelectorKeyHandler handler)
+                                                  SelectionKeyHandlerFunctiom handler)
             throws IOException {
         SSLEngine sslEngine;
         try {
@@ -65,7 +65,7 @@ public class SslChannelHandler implements ChannelHandler {
     public SslChannelHandler(SSLEngine engine,
                              SocketChannel channel,
                              int ops,
-                             SelectorKeyHandler handler) {
+                             SelectionKeyHandlerFunctiom handler) {
         this.channel = channel;
         this.engine = engine;
         this.handler = handler;
@@ -76,8 +76,8 @@ public class SslChannelHandler implements ChannelHandler {
 
 
     @Override
-    public void init(SelectorService service) throws IOException {
-        this.service = service;
+    public void init(EventLoopExecutor executor) throws IOException {
+        this.service = executor;
         this.unwrap_src = allocate(BufType.PACKET);
         register(wrap_src_pipe.sink(), ops, handler);
         register(unwrap_dst_pipe.source(), ops, handler);
@@ -337,7 +337,7 @@ public class SslChannelHandler implements ChannelHandler {
 
     private void register(SelectableChannel ch,
                           int ops,
-                          SelectorKeyHandler handler)
+                          SelectionKeyHandlerFunctiom handler)
             throws IOException {
         service.register(ch, ops & ch.validOps(), handler);
     }

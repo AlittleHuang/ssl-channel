@@ -19,7 +19,7 @@ public class CachedByteBufferAllocator implements ByteBufferAllocator {
 
     private final Map<Integer, Cache> cacheMap = new ConcurrentHashMap<>();
     private final ByteBufferAllocator target;
-    private long expirationInterval = Duration.ofMinutes(10).toMillis();
+    private long expirationInterval = Duration.ofMinutes(1).toMillis();
     private int maxCacheSize = 2048;
     private volatile boolean closed = false;
     private int minCacheCapacity = 256;
@@ -39,8 +39,8 @@ public class CachedByteBufferAllocator implements ByteBufferAllocator {
 
     @Override
     public ByteBuffer allocate(int capacity) {
-        Cache cache = cacheMap.get(capacity);
-        return cache == null ? target.allocate(capacity) : cache.getOrDefault(() -> target.allocate(capacity));
+        Cache cache = cacheMap.computeIfAbsent(capacity, k -> new Cache());
+        return cache.getOrDefault(() -> target.allocate(capacity));
     }
 
     @Override
@@ -49,7 +49,11 @@ public class CachedByteBufferAllocator implements ByteBufferAllocator {
             return;
         }
         int capacity = buffer.capacity();
-        Cache cache = cacheMap.computeIfAbsent(capacity, k -> new Cache());
+        Cache cache = cacheMap.get(capacity);
+        if (cache == null) {
+            target.free(buffer);
+            return;
+        }
         if (!closed && capacity >= minCacheCapacity && cache.size() < maxCacheSize) {
             cache.put(buffer, System.currentTimeMillis() + expirationInterval);
         } else {
@@ -152,7 +156,7 @@ public class CachedByteBufferAllocator implements ByteBufferAllocator {
                     deque.addFirst(wrap);
                     size++;
                 } else {
-                    logger.warning("buffer is already in cache");
+                    logger.fine("buffer is already in cache");
                 }
             });
         }

@@ -5,35 +5,24 @@ import java.nio.ByteBuffer;
 
 public interface PipeHandler {
 
+    ByteBuffer END_OF_STREAM = ByteBuffer.wrap(new byte[0]).asReadOnlyBuffer();
+
     default void init(PipeContext ctx) {
     }
 
-    default void onReceive(PipeContext context, ByteBuffer buf) {
-        context.fireReceive(buf);
+    default void onReceive(PipeContext ctx, ByteBuffer buf) throws IOException {
+        ctx.fireReceive(buf);
     }
 
     default void onConnected(PipeContext ctx) throws IOException {
         ctx.fireConnected();
     }
 
-    default void onWrite(PipeContext context, ByteBuffer buf) throws IOException {
-        context.fireWrite(buf);
+    default void onWrite(PipeContext ctx, ByteBuffer buf) throws IOException {
+        ctx.fireWrite(buf);
     }
 
-    static PipeHandler readHandler(PipeReadHandler handler) {
-        return handler;
+    default void onClose(PipeContext ctx) throws IOException {
+        ctx.fireClose();
     }
-
-    static PipeHandler writeHandler(PipeWriteHandler handler) {
-        return handler;
-    }
-
-    static PipeHandler initHandler(PipeInitHandler handler) {
-        return handler;
-    }
-
-    static PipeHandler connectedHandler(PipeConnectedHandler handler) {
-        return handler;
-    }
-
 }

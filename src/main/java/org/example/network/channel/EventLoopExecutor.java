@@ -2,8 +2,9 @@ package org.example.network.channel;
 
 import org.example.network.buf.ByteBufferAllocator;
 import org.example.network.buf.CachedByteBufferAllocator;
-import org.example.network.channel.handler.ChannelHandler;
-import org.example.network.channel.handler.SelectorKeyHandler;
+import org.example.network.channel.handler.SelectionKeyHandlerFunctiom;
+import org.example.network.channel.handler.SelectionKeyHandler;
+import org.example.network.channel.handler.SelectionKeyHandlerImpl;
 
 import java.io.IOException;
 import java.nio.channels.SelectableChannel;
@@ -15,10 +16,10 @@ import java.util.logging.Logger;
 
 import static java.util.logging.Level.WARNING;
 
-public class SelectorService implements AutoCloseable {
+public class EventLoopExecutor implements AutoCloseable {
 
     private static final Logger logger = Logger
-            .getLogger(SelectorService.class.getName());
+            .getLogger(EventLoopExecutor.class.getName());
 
 
     public static int STATUS_READY = 0;
@@ -30,33 +31,32 @@ public class SelectorService implements AutoCloseable {
     private final AtomicInteger status = new AtomicInteger();
     private final Thread thread = new Thread(this::work);
 
-    public SelectorService(Selector selector) {
+    public EventLoopExecutor(Selector selector) {
         this.selector = selector;
         this.allocator = CachedByteBufferAllocator.HEAP;
     }
 
-    public static SelectorService start(Selector selector) {
-        SelectorService service = new SelectorService(selector);
+    public static EventLoopExecutor start(Selector selector) {
+        EventLoopExecutor service = new EventLoopExecutor(selector);
         service.start();
         return service;
     }
 
-    public void register(ChannelHandler handler) throws IOException {
+    public void register(SelectionKeyHandler handler) throws IOException {
         checkRunning();
+        handler.init(this);
         registerAnsWakeup(handler.channel(), handler.registerOps(), handler);
     }
 
     public void register(SelectableChannel channel,
                          int ops,
-                         SelectorKeyHandler handler)
+                         SelectionKeyHandlerFunctiom handler)
             throws IOException {
-        checkRunning();
-        registerAnsWakeup(channel, ops, handler);
+        register(new SelectionKeyHandlerImpl(handler, channel, ops));
     }
 
-    private void registerAnsWakeup(SelectableChannel channel, int ops, SelectorKeyHandler handler)
+    private void registerAnsWakeup(SelectableChannel channel, int ops, SelectionKeyHandlerFunctiom handler)
             throws IOException {
-        handler.init(this);
         channel.register(selector, ops, handler);
         selector.wakeup();
     }
@@ -98,7 +98,7 @@ public class SelectorService implements AutoCloseable {
             if (!key.isValid()) {
                 continue;
             }
-            if (key.attachment() instanceof SelectorKeyHandler handler) {
+            if (key.attachment() instanceof SelectionKeyHandlerFunctiom handler) {
                 handler.handler(key);
             } else {
                 key.interestOps(0);

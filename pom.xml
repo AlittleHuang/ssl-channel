@@ -20,11 +20,6 @@
       <version>24.0.1</version>
       <scope>compile</scope>
     </dependency>
-    <dependency>
-      <groupId>org.projectlombok</groupId>
-      <artifactId>lombok</artifactId>
-      <version>1.18.30</version>
-    </dependency>
   </dependencies>
 
 </project>
