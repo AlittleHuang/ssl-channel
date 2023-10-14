@@ -19,7 +19,7 @@ public class NioSSLExample3 {
         InetSocketAddress address = new InetSocketAddress("www.baidu.com", 443);
         Selector selector = Selector.open();
         SocketChannel channel = SocketChannel.open();
-        EventLoopExecutor service = EventLoopExecutor.start(selector);
+        EventLoopExecutor service = EventLoopExecutor.open(selector);
         channel.configureBlocking(false);
 
         int ops = SelectionKey.OP_WRITE | SelectionKey.OP_READ;

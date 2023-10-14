@@ -1,9 +1,10 @@
 package org.example.network.channel;
 
+import org.example.concurrent.SingleThreadTask;
 import org.example.network.buf.ByteBufferAllocator;
 import org.example.network.buf.CachedByteBufferAllocator;
-import org.example.network.channel.handler.SelectionKeyHandlerFunctiom;
 import org.example.network.channel.handler.SelectionKeyHandler;
+import org.example.network.channel.handler.SelectionKeyHandlerFunction;
 import org.example.network.channel.handler.SelectionKeyHandlerImpl;
 
 import java.io.IOException;
@@ -11,6 +12,8 @@ import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.Iterator;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
@@ -21,6 +24,7 @@ public class EventLoopExecutor implements AutoCloseable {
     private static final Logger logger = Logger
             .getLogger(EventLoopExecutor.class.getName());
 
+    // 多线程
 
     public static int STATUS_READY = 0;
     public static int STATUS_RUNNING = 1;
@@ -30,16 +34,26 @@ public class EventLoopExecutor implements AutoCloseable {
     private final ByteBufferAllocator allocator;
     private final AtomicInteger status = new AtomicInteger();
     private final Thread thread = new Thread(this::work);
+    private final ExecutorService executorService;
 
     public EventLoopExecutor(Selector selector) {
         this.selector = selector;
         this.allocator = CachedByteBufferAllocator.HEAP;
+        this.executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     }
 
-    public static EventLoopExecutor start(Selector selector) {
-        EventLoopExecutor service = new EventLoopExecutor(selector);
-        service.start();
-        return service;
+    public EventLoopExecutor(Selector selector, ByteBufferAllocator allocator, ExecutorService executor) {
+        this.selector = selector;
+        this.allocator = allocator;
+        this.executorService = executor;
+    }
+
+    public static EventLoopExecutor open() throws IOException {
+        return open(Selector.open());
+    }
+
+    public static EventLoopExecutor open(Selector selector) {
+        return new EventLoopExecutor(selector).start();
     }
 
     public void register(SelectionKeyHandler handler) throws IOException {
@@ -50,14 +64,23 @@ public class EventLoopExecutor implements AutoCloseable {
 
     public void register(SelectableChannel channel,
                          int ops,
-                         SelectionKeyHandlerFunctiom handler)
+                         SelectionKeyHandlerFunction handler)
             throws IOException {
         register(new SelectionKeyHandlerImpl(handler, channel, ops));
     }
 
-    private void registerAnsWakeup(SelectableChannel channel, int ops, SelectionKeyHandlerFunctiom handler)
+    private void registerAnsWakeup(SelectableChannel channel,
+                                   int ops,
+                                   SelectionKeyHandlerFunction handler)
             throws IOException {
-        channel.register(selector, ops, handler);
+        SelectionKey key = channel.register(selector, ops);
+        key.attach(new SingleThreadTask(executorService, () -> {
+            try {
+                handler.handler(key);
+            } catch (Exception e) {
+                logger.log(WARNING, e, () -> "handler " + key + " error");
+            }
+        }));
         selector.wakeup();
     }
 
@@ -71,12 +94,13 @@ public class EventLoopExecutor implements AutoCloseable {
         return status.intValue();
     }
 
-    public void start() {
+    public EventLoopExecutor start() {
         if (status.compareAndSet(STATUS_READY, STATUS_RUNNING)) {
             thread.start();
         } else {
             throw new IllegalStateException("error status " + getStatus());
         }
+        return this;
     }
 
     private void work() {
@@ -98,8 +122,8 @@ public class EventLoopExecutor implements AutoCloseable {
             if (!key.isValid()) {
                 continue;
             }
-            if (key.attachment() instanceof SelectionKeyHandlerFunctiom handler) {
-                handler.handler(key);
+            if (key.attachment() instanceof SingleThreadTask task) {
+                task.wakeup();
             } else {
                 key.interestOps(0);
                 logger.log(WARNING, () -> key + " miss handler");

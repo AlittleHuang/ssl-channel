@@ -38,7 +38,7 @@ public class SslChannelHandler implements SelectionKeyHandler {
     private int app_buf_size;
     private int packet_buf_size;
 
-    private final SelectionKeyHandlerFunctiom handler;
+    private final SelectionKeyHandlerFunction handler;
 
     Lock handshaking = new ReentrantLock();
 
@@ -46,7 +46,7 @@ public class SslChannelHandler implements SelectionKeyHandler {
     private EventLoopExecutor service;
 
     public static SslChannelHandler clientChannel(SocketAddress address,
-                                                  SelectionKeyHandlerFunctiom handler)
+                                                  SelectionKeyHandlerFunction handler)
             throws IOException {
         SSLEngine sslEngine;
         try {
@@ -65,7 +65,7 @@ public class SslChannelHandler implements SelectionKeyHandler {
     public SslChannelHandler(SSLEngine engine,
                              SocketChannel channel,
                              int ops,
-                             SelectionKeyHandlerFunctiom handler) {
+                             SelectionKeyHandlerFunction handler) {
         this.channel = channel;
         this.engine = engine;
         this.handler = handler;
@@ -337,7 +337,7 @@ public class SslChannelHandler implements SelectionKeyHandler {
 
     private void register(SelectableChannel ch,
                           int ops,
-                          SelectionKeyHandlerFunctiom handler)
+                          SelectionKeyHandlerFunction handler)
             throws IOException {
         service.register(ch, ops & ch.validOps(), handler);
     }

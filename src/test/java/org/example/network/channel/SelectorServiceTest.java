@@ -19,7 +19,7 @@ public class SelectorServiceTest {
 
         config.host = "www.baidu.com";
         config.port = 80;
-        config.executor = EventLoopExecutor.start(Selector.open());
+        config.executor = EventLoopExecutor.open(Selector.open());
         config.handler = new PipeHandler() {
             @Override
             public void onConnected(PipeContext ctx) throws IOException {

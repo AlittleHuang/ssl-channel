@@ -9,12 +9,12 @@ import java.util.function.Consumer;
 
 public class SelectionKeyHandlerImpl implements SelectionKeyHandler {
 
-    private final SelectionKeyHandlerFunctiom handler;
+    private final SelectionKeyHandlerFunction handler;
     private final Consumer<EventLoopExecutor> initializer;
     private final SelectableChannel channel;
     private final int registerOps;
 
-    public SelectionKeyHandlerImpl(SelectionKeyHandlerFunctiom handler,
+    public SelectionKeyHandlerImpl(SelectionKeyHandlerFunction handler,
                                    SelectableChannel channel,
                                    int registerOps) {
         this.handler = handler;
@@ -23,7 +23,7 @@ public class SelectionKeyHandlerImpl implements SelectionKeyHandler {
         this.initializer = null;
     }
 
-    public SelectionKeyHandlerImpl(SelectionKeyHandlerFunctiom handler,
+    public SelectionKeyHandlerImpl(SelectionKeyHandlerFunction handler,
                                    Consumer<EventLoopExecutor> initializer,
                                    SelectableChannel channel,
                                    int registerOps) {

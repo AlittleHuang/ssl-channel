@@ -21,7 +21,7 @@ class SslHandlerTest {
 
         config.host = "www.baidu.com";
         config.port = 443;
-        config.executor = EventLoopExecutor.start(Selector.open());
+        config.executor = EventLoopExecutor.open(Selector.open());
         config.handler = new PipeHandler() {
 
             @Override
