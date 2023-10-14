@@ -19,8 +19,7 @@ import static java.util.logging.Level.WARNING;
 
 public class EventLoopExecutor implements AutoCloseable {
 
-    private static final Logger logger = Logger
-            .getLogger(EventLoopExecutor.class.getName());
+    private static final Logger logger = Logger.getLogger(EventLoopExecutor.class.getName());
 
     private volatile static EventLoopExecutor DEFAULT;
 

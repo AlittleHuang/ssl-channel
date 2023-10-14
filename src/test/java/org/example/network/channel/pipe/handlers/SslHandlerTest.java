@@ -28,7 +28,7 @@ class SslHandlerTest {
             public void init(PipeContext ctx) {
                 try {
                     ctx.addFirst(new SslPipeHandler(SSLContext.getDefault(), true));
-                    ctx.addFirst(new LogHandler());
+                    ctx.addFirst(new LoggingHandler());
                 } catch (NoSuchAlgorithmException e) {
                     throw new RuntimeException(e);
                 }
