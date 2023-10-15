@@ -1,4 +1,4 @@
-package org.example.concurrent;
+package org.example.network.event;
 
 import org.example.network.event.SelectionKeyHandlerFunction;
 
