@@ -29,6 +29,7 @@ public class SelectorServiceTest {
                                 \r
                                 """;
                 ctx.fireWrite(ByteBuffer.wrap(req.getBytes()));
+                ctx.fireConnected();
             }
 
             @Override

@@ -57,7 +57,6 @@ class TcpConnection implements SelectionKeyHandler {
             }
         }
         if (key.isWritable()) {
-            pipeline.setWritable(true);
             key.interestOps(SelectionKey.OP_READ);
         }
         if (key.isReadable() && (pipeline.isAutoRead() || pipeline.isRequiredRead())) {

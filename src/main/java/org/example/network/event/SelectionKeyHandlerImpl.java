@@ -32,7 +32,6 @@ public class SelectionKeyHandlerImpl implements SelectionKeyHandler {
     }
 
     @Override
-
     public void handler(SelectionKey key) throws IOException {
         handler.handler(key);
     }

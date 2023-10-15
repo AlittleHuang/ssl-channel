@@ -11,7 +11,6 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Objects;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
@@ -47,6 +46,7 @@ public class TcpServer {
                 }
                 child.configureBlocking(false);
                 Pipeline pipeline = new Pipeline(child);
+                pipeline.setAutoRead(config.autoRead);
                 pipeline.addFirst(config.handler);
 
                 TcpConnection connection = new TcpConnection(
@@ -88,6 +88,8 @@ public class TcpServer {
         public PipeHandler handler;
 
         public int bufCapacity;
+
+        public boolean autoRead = true;
 
 
     }

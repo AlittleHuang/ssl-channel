@@ -64,6 +64,7 @@ public class SslPipeHandler implements PipeHandler {
         public void onConnected(PipeContext ctx) throws IOException {
             wrap(ctx, EMPTY);
             unwrap(ctx, EMPTY);
+            ctx.fireConnected();
         }
 
         private ByteBuffer mergeUnwrapSrc(PipeContext ctx, ByteBuffer receive) {

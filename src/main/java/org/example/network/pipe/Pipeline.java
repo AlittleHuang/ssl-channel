@@ -32,8 +32,6 @@ public class Pipeline implements ByteBufferAllocator {
 
     private final PipeNode tail;
 
-    private boolean writable;
-
     private boolean autoRead = true;
 
     private boolean requiredRead;
@@ -73,14 +71,6 @@ public class Pipeline implements ByteBufferAllocator {
 
     public void onError(Throwable throwable) {
         tail.onError(throwable);
-    }
-
-    public boolean isWritable() {
-        return writable;
-    }
-
-    public void setWritable(boolean writable) {
-        this.writable = writable;
     }
 
     public void connected() throws IOException {
@@ -164,9 +154,12 @@ public class Pipeline implements ByteBufferAllocator {
     static class TailHandler implements PipeHandler {
 
         @Override
-        public void onReceive(PipeContext ctx, ByteBuffer buf) {
+        public void onReceive(PipeContext ctx, ByteBuffer buf) throws IOException {
             if (buf.hasRemaining()) {
                 logger.warning(() -> "Buffer has " + buf.remaining() + "remaining reached end of pipeline");
+            }
+            if (buf == END_OF_STREAM) {
+                ctx.pipeline().close();
             }
             ctx.free(buf);
         }

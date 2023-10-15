@@ -1,13 +1,13 @@
 package org.example.network.event.pipe.handlers;
 
-import org.example.network.pipe.handlers.LoggingHandler;
-import org.example.network.pipe.handlers.SslPipeHandler;
-import org.example.network.tcp.TcpClient;
-import org.example.network.tcp.TcpClient.Config;
 import org.example.network.buf.ByteBufferUtil;
 import org.example.network.event.EventLoopExecutor;
 import org.example.network.pipe.PipeContext;
 import org.example.network.pipe.PipeHandler;
+import org.example.network.pipe.handlers.LoggingHandler;
+import org.example.network.pipe.handlers.SslPipeHandler;
+import org.example.network.tcp.TcpClient;
+import org.example.network.tcp.TcpClient.Config;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
@@ -30,7 +30,6 @@ class SslHandlerTest {
             public void init(PipeContext ctx) {
                 try {
                     ctx.addFirst(new SslPipeHandler(SSLContext.getDefault(), true));
-                    ctx.addFirst(new LoggingHandler());
                 } catch (NoSuchAlgorithmException e) {
                     throw new RuntimeException(e);
                 }
@@ -39,11 +38,12 @@ class SslHandlerTest {
             @Override
             public void onConnected(PipeContext ctx) throws IOException {
                 String req = """
-                                GET / HTTP/1.0\r
-                                Connection: close\r
-                                \r
-                                """;
+                        GET / HTTP/1.0\r
+                        Connection: close\r
+                        \r
+                        """;
                 ctx.fireWrite(ByteBuffer.wrap(req.getBytes()));
+                ctx.fireConnected();
             }
 
             @Override

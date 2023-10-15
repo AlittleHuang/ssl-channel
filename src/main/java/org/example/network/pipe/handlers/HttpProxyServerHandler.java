@@ -41,7 +41,7 @@ public class HttpProxyServerHandler implements PipeHandler {
     private void establishConnection(PipeContext ctx, ByteBuffer buf) throws IOException {
         updateProxyRequest(ctx, buf);
         if (endRequest()) {
-            logger.fine(() -> "request header: " + new String(request));
+            logger.finer(() -> "request header: " + new String(request));
             ProxyRequest pr = resoleRequestData();
             Config config = new Config();
             config.executor = ctx.executor();
@@ -50,7 +50,7 @@ public class HttpProxyServerHandler implements PipeHandler {
             logger.info("ACCEPT " + pr.method() + " " + config.host + ":" + config.port);
             if ("CONNECT".equals(pr.method)) {
                 ctx.pipeline().setAutoRead(false);
-                byte[] bytes = "HTTP/1.1 OK Connection Established\r\n\r\n".getBytes();
+                byte[] bytes = "HTTP/1.1 200 Connection Established\r\n\r\n".getBytes();
                 ByteBuffer bf = ByteBuffer.wrap(bytes).asReadOnlyBuffer();
                 ctx.fireWrite(bf);
             }
@@ -68,6 +68,7 @@ public class HttpProxyServerHandler implements PipeHandler {
                     } else {
                         local.setAutoRead(true);
                     }
+                    ctx.fireConnected();
                 }
 
                 @Override

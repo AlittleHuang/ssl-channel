@@ -28,6 +28,7 @@ public class TcpClient {
         }
         SocketChannel channel = SocketChannel.open();
         Pipeline pipeline = new Pipeline(channel);
+        pipeline.setAutoRead(config.autoRead);
         pipeline.addFirst(config.handler);
         channel.configureBlocking(false);
         int bufCapacity = config.bufCapacity <= 0 ? 1024 * 8 : config.bufCapacity;
@@ -73,6 +74,7 @@ public class TcpClient {
         public int bufCapacity;
 
 
+        public boolean autoRead = true;
     }
 
 }
