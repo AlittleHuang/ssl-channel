@@ -1,7 +1,7 @@
-package org.example.network.channel.pipe.handlers;
+package org.example.network.pipe.handlers;
 
-import org.example.network.channel.pipe.PipeContext;
-import org.example.network.channel.pipe.PipeHandler;
+import org.example.network.pipe.PipeHandler;
+import org.example.network.pipe.PipeContext;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;

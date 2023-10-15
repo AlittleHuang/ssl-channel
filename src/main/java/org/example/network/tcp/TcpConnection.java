@@ -1,9 +1,9 @@
 package org.example.network.tcp;
 
-import org.example.network.channel.EventLoopExecutor;
-import org.example.network.channel.handler.SelectionKeyHandler;
-import org.example.network.channel.pipe.PipeHandler;
-import org.example.network.channel.pipe.Pipeline;
+import org.example.network.event.EventLoopExecutor;
+import org.example.network.event.SelectionKeyHandler;
+import org.example.network.pipe.PipeHandler;
+import org.example.network.pipe.Pipeline;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

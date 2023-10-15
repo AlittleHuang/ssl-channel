@@ -1,7 +1,7 @@
-package org.example.network.channel.pipe;
+package org.example.network.pipe;
 
 
-import org.example.network.channel.EventLoopExecutor;
+import org.example.network.event.EventLoopExecutor;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

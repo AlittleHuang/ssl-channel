@@ -1,7 +1,8 @@
-package org.example.network.channel.pipe.handlers;
+package org.example.network.pipe.handlers;
 
-import org.example.network.channel.pipe.PipeContext;
-import org.example.network.channel.pipe.PipeHandler;
+import org.example.log.Logs;
+import org.example.network.pipe.PipeContext;
+import org.example.network.pipe.PipeHandler;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -10,7 +11,7 @@ import java.util.logging.Logger;
 
 public class LoggingHandler implements PipeHandler {
 
-    private static final Logger logger = Logger.getLogger(LoggingHandler.class.getName());
+    private static final Logger logger = Logs.getLogger(LoggingHandler.class);
 
     private Level level = Level.INFO;
 

@@ -1,11 +1,11 @@
-package org.example.network.channel;
+package org.example.network.event;
 
 
 import org.example.network.tcp.TcpClient;
 import org.example.network.tcp.TcpClient.Config;
 import org.example.network.buf.ByteBufferUtil;
-import org.example.network.channel.pipe.PipeContext;
-import org.example.network.channel.pipe.PipeHandler;
+import org.example.network.pipe.PipeContext;
+import org.example.network.pipe.PipeHandler;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

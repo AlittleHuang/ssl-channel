@@ -1,6 +1,6 @@
 package org.example.concurrent;
 
-import org.example.network.channel.handler.SelectionKeyHandlerFunction;
+import org.example.network.event.SelectionKeyHandlerFunction;
 
 import java.nio.channels.SelectionKey;
 import java.util.concurrent.ExecutorService;

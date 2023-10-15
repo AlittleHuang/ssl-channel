@@ -1,5 +1,7 @@
 package org.example.network.buf;
 
+import org.example.log.Logs;
+
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.*;
@@ -14,7 +16,7 @@ import java.util.logging.Logger;
 
 public class CachedByteBufferAllocator implements ByteBufferAllocator, AutoCloseable {
 
-    private static final Logger logger = Logger.getLogger(CachedByteBufferAllocator.class.getName());
+    private static final Logger logger = Logs.getLogger(CachedByteBufferAllocator.class);
     public static final CachedByteBufferAllocator HEAP = new CachedByteBufferAllocator(new HeapByteBufferAllocator());
 
     private final Map<Integer, Cache> cacheMap = new ConcurrentHashMap<>();

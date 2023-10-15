@@ -1,5 +1,6 @@
-package org.example.network.channel.pipe.handlers;
+package org.example.network.event.pipe.handlers;
 
+import org.example.network.pipe.handlers.HttpProxyServerInitializer;
 import org.example.network.tcp.TcpServer;
 import org.example.network.tcp.TcpServer.Config;
 
@@ -10,7 +11,7 @@ class HttpProxyServerHandlerTest {
     public static void main(String[] args) throws IOException {
         Config config = new Config();
         config.port = 1090;
-        config.handler = new HttpProxyServerHandler();
+        config.handler = new HttpProxyServerInitializer();
         TcpServer.open(config);
     }
 

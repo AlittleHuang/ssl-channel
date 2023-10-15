@@ -1,4 +1,4 @@
-package org.example.network.channel;
+package org.example.network.event;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

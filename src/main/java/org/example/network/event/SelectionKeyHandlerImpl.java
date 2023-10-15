@@ -1,6 +1,4 @@
-package org.example.network.channel.handler;
-
-import org.example.network.channel.EventLoopExecutor;
+package org.example.network.event;
 
 import java.io.IOException;
 import java.nio.channels.SelectableChannel;

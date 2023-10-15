@@ -1,8 +1,9 @@
 package org.example.network.tcp;
 
-import org.example.network.channel.EventLoopExecutor;
-import org.example.network.channel.pipe.PipeHandler;
-import org.example.network.channel.pipe.Pipeline;
+import org.example.log.Logs;
+import org.example.network.event.EventLoopExecutor;
+import org.example.network.pipe.PipeHandler;
+import org.example.network.pipe.Pipeline;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -10,9 +11,13 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 public class TcpServer {
+
+    private static Logger logger = Logs.getLogger(TcpServer.class);
 
     private final EventLoopExecutor executor;
     private final ServerSocketChannel channel;
@@ -52,6 +57,7 @@ public class TcpServer {
         });
         InetSocketAddress address = new InetSocketAddress(config.host, config.port);
         channel.bind(address);
+        logger.fine(() -> "tpc server bind " + address + " success");
     }
 
     public EventLoopExecutor executor() {

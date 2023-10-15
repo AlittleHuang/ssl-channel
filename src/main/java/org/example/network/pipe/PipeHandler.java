@@ -1,4 +1,4 @@
-package org.example.network.channel.pipe;
+package org.example.network.pipe;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

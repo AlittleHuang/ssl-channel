@@ -1,9 +1,7 @@
-package org.example.network.channel;
+package org.example.network.event;
 
 import org.example.concurrent.SelectionKeyHandlerTask;
-import org.example.network.channel.handler.SelectionKeyHandler;
-import org.example.network.channel.handler.SelectionKeyHandlerFunction;
-import org.example.network.channel.handler.SelectionKeyHandlerImpl;
+import org.example.log.Logs;
 
 import java.io.IOException;
 import java.nio.channels.SelectableChannel;
@@ -19,7 +17,7 @@ import static java.util.logging.Level.WARNING;
 
 public class EventLoopExecutor implements AutoCloseable {
 
-    private static final Logger logger = Logger.getLogger(EventLoopExecutor.class.getName());
+    private static final Logger logger = Logs.getLogger(EventLoopExecutor.class);
 
     private volatile static EventLoopExecutor DEFAULT;
 

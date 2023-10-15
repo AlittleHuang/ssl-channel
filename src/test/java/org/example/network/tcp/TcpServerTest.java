@@ -1,8 +1,8 @@
 package org.example.network.tcp;
 
 import org.example.network.buf.ByteBufferUtil;
-import org.example.network.channel.pipe.PipeContext;
-import org.example.network.channel.pipe.PipeHandler;
+import org.example.network.pipe.PipeContext;
+import org.example.network.pipe.PipeHandler;
 import org.example.network.tcp.TcpServer.Config;
 
 import java.io.IOException;
