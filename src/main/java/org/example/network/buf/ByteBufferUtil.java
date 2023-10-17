@@ -27,4 +27,10 @@ public class ByteBufferUtil {
         return new String(readToArray(buffer));
     }
 
+    public static String identity(ByteBuffer buffer) {
+        return buffer.getClass().getSimpleName()
+               + "[" + buffer.capacity() + "]"
+               + "@" + Integer.toString(System.identityHashCode(buffer), 16);
+    }
+
 }

@@ -13,8 +13,7 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-import static java.lang.System.Logger.Level.DEBUG;
-import static java.lang.System.Logger.Level.INFO;
+import static java.lang.System.Logger.Level.*;
 
 public class HttpProxyServerHandler implements PipeHandler {
 
@@ -38,13 +37,14 @@ public class HttpProxyServerHandler implements PipeHandler {
             remote.write(buf);
         } else {
             establishConnection(ctx, buf);
+            ctx.free(buf);
         }
     }
 
     private void establishConnection(PipeContext ctx, ByteBuffer buf) throws IOException {
         updateProxyRequest(ctx, buf);
         if (endRequest()) {
-            logger.log(DEBUG, () -> "request header: " + new String(request));
+            logger.log(TRACE, () -> "request header: " + new String(request));
             ProxyRequest pr = resoleRequestData();
             Config config = new Config();
             config.executor = ctx.executor();

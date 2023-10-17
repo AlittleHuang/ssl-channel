@@ -11,7 +11,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 import java.util.function.Supplier;
+
+import static java.lang.System.Logger.Level.TRACE;
 
 
 public class CachedByteBufferAllocator implements ByteBufferAllocator, AutoCloseable {
@@ -21,7 +24,7 @@ public class CachedByteBufferAllocator implements ByteBufferAllocator, AutoClose
 
     private final Map<Integer, Cache> cacheMap = new ConcurrentHashMap<>();
     private final ByteBufferAllocator target;
-    private long expirationInterval = Duration.ofMinutes(1).toMillis();
+    private long expirationInterval = Duration.ofMinutes(10).toMillis();
     private int maxCacheSize = 2048;
     private volatile boolean closed = false;
     private int minCacheCapacity = 256;
@@ -41,8 +44,8 @@ public class CachedByteBufferAllocator implements ByteBufferAllocator, AutoClose
 
     @Override
     public ByteBuffer allocate(int capacity) {
-        Cache cache = cacheMap.computeIfAbsent(capacity, k -> new Cache());
-        return cache.getOrDefault(() -> target.allocate(capacity));
+        return cacheMap.computeIfAbsent(capacity, Cache::new)
+                .getOrDefault(target::allocate);
     }
 
     @Override
@@ -97,12 +100,12 @@ public class CachedByteBufferAllocator implements ByteBufferAllocator, AutoClose
     }
 
     private void clearExpired() {
-        long nanos = Duration.ofSeconds(1).toNanos();
+        long nanos = Duration.ofSeconds(10).toNanos();
         while (!closed) {
             try {
                 LockSupport.parkNanos(nanos);
                 for (Cache value : cacheMap.values()) {
-                    value.clearExpired();
+                    value.clearExpired().forEach(target::free);
                 }
             } catch (Exception e) {
                 logger.log(Level.WARNING, "clean cache error", e);
@@ -129,8 +132,12 @@ public class CachedByteBufferAllocator implements ByteBufferAllocator, AutoClose
         private final Lock lock = new ReentrantLock();
         private final Deque<BufWrap> deque = new LinkedList<>();
         private final Set<BufWrap> buffers = new HashSet<>();
+        private final int capacity;
         private int size;
 
+        public Cache(int capacity) {
+            this.capacity = capacity;
+        }
 
         public int size() {
             lock.lock();
@@ -141,7 +148,7 @@ public class CachedByteBufferAllocator implements ByteBufferAllocator, AutoClose
             }
         }
 
-        public ByteBuffer getOrDefault(Supplier<ByteBuffer> supplier) {
+        public ByteBuffer getOrDefault(Function<Integer, ByteBuffer> supplier) {
             ByteBuffer result = getInLock(() -> {
                 BufWrap mark = deque.pollFirst();
                 if (mark != null) {
@@ -152,10 +159,13 @@ public class CachedByteBufferAllocator implements ByteBufferAllocator, AutoClose
                 }
                 return null;
             });
-            return result == null ? supplier.get() : result;
+            ByteBuffer buf = result == null ? supplier.apply(capacity) : result;
+            logger.log(TRACE, () -> "get: " + ByteBufferUtil.identity(buf));
+            return buf;
         }
 
         public void put(ByteBuffer buffer, long expTime) {
+            logger.log(TRACE, () -> "put: " + ByteBufferUtil.identity(buffer));
             runInLock(() -> {
                 BufWrap wrap = new BufWrap(buffer, expTime);
                 if (buffers.add(wrap)) {
@@ -167,18 +177,20 @@ public class CachedByteBufferAllocator implements ByteBufferAllocator, AutoClose
             });
         }
 
-        private void clearExpired() {
-            runInLock(this::doClearExpired);
+        private List<ByteBuffer> clearExpired() {
+            return getInLock(this::doClearExpired);
         }
 
-        private void doClearExpired() {
+        private List<ByteBuffer> doClearExpired() {
+            List<ByteBuffer> list = new ArrayList<>();
             long now = System.currentTimeMillis();
             while (true) {
                 BufWrap last = deque.peekLast();
-                if (last != null && now > last.time) {
+                if (last != null && now > last.time()) {
                     try {
                         BufWrap mark = deque.removeLast();
                         if (mark != null) {
+                            list.add(mark.buffer());
                             buffers.remove(mark);
                         }
                         size--;
@@ -189,6 +201,9 @@ public class CachedByteBufferAllocator implements ByteBufferAllocator, AutoClose
                     break;
                 }
             }
+            logger.log(TRACE, () -> "capacity: " + capacity + ", cacache-size: " + size);
+
+            return list;
         }
 
 

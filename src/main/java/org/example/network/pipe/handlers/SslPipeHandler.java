@@ -12,10 +12,8 @@ import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLEngineResult.Status;
 import java.io.IOException;
 import java.lang.System.Logger;
-import java.lang.System.Logger.Level;
 import java.nio.ByteBuffer;
 
-import static java.lang.System.Logger.Level.TRACE;
 import static java.lang.System.Logger.Level.TRACE;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.*;
 import static javax.net.ssl.SSLEngineResult.Status.*;
@@ -88,21 +86,29 @@ public class SslPipeHandler implements PipeHandler {
         }
 
         private SSLEngineResult unwrap(PipeContext ctx, ByteBuffer buf) throws IOException {
-            ByteBuffer unwrap_src = updateUnwrapSrc(ctx, buf);
             int size = getAppBufSize();
             SSLEngineResult result;
             while (true) {
+                updateUnwrapSrc(ctx, buf);
                 ByteBuffer unwrap_dst = ctx.allocate(size);
                 result = engine.unwrap(unwrap_src, unwrap_dst);
 
                 Status status = result.getStatus();
                 if (result.bytesProduced() > 0) {
                     ctx.fireReceive(unwrap_dst.flip());
+                } else {
+                    ctx.free(unwrap_dst);
                 }
-                if (status == BUFFER_UNDERFLOW) {
+                if (buf.hasRemaining()) {
+                    if (status == BUFFER_UNDERFLOW
+                        && unwrap_src.remaining() >= getPacketBufSize()) {
+                        enlargePacketBufSize();
+                    }
+                } else if (status == BUFFER_UNDERFLOW) {
                     break;
                 } else if (status == BUFFER_OVERFLOW) {
-                    size = enlargeApplicationBufSize();
+                    enlargeAppBufSize();
+                    size = getAppBufSize();
                 } else if (status == CLOSED) {
                     engine.closeInbound();
                     break;
@@ -113,39 +119,31 @@ public class SslPipeHandler implements PipeHandler {
                     break;
                 }
             }
-            if (unwrap_src.hasRemaining()) {
-                this.unwrap_src = unwrap_src;
-            } else {
-                this.unwrap_src = null;
+            ctx.free(buf);
+            if (!unwrap_src.hasRemaining()) {
                 ctx.free(unwrap_src);
+                this.unwrap_src = null;
             }
             if (result.getHandshakeStatus() == FINISHED) {
                 handshakeFinished(ctx);
             }
             SSLEngineResult r = result;
-            logger.log(TRACE, () -> "unwrap:" + r);
+            logger.log(TRACE, () -> "unwrap: " + r);
             return result;
         }
 
 
-        private ByteBuffer updateUnwrapSrc(PipeContext ctx, ByteBuffer receive) {
+        private void updateUnwrapSrc(PipeContext ctx, ByteBuffer receive) {
             if (unwrap_src == null) {
-                return receive;
+                unwrap_src = ctx.allocate(getPacketBufSize());
+            } else {
+                unwrap_src.compact();
             }
-            if (!receive.hasRemaining()) {
-                ctx.free(receive);
-                return unwrap_src;
-            }
-            ByteBuffer dst;
-            int minSize = unwrap_src.remaining() + receive.remaining();
-            int size = getPacketBufSize();
-            while (size < minSize) {
-                size = enlargePacketBufSize();
-            }
-            dst = ctx.allocate(size);
-            dst.put(unwrap_src);
-            dst.put(receive);
-            return dst.flip();
+            int len = Math.min(unwrap_src.limit() - unwrap_src.position(), receive.remaining());
+            unwrap_src.put(unwrap_src.position(), receive, receive.position(), len);
+            unwrap_src.position(unwrap_src.position() + len);
+            receive.position(receive.position() + len);
+            unwrap_src.flip();
         }
 
 
@@ -193,7 +191,7 @@ public class SslPipeHandler implements PipeHandler {
             if (result.getHandshakeStatus() == FINISHED) {
                 handshakeFinished(ctx);
             }
-            logger.log(TRACE, () -> "wrap:" + result);
+            logger.log(TRACE, () -> "wrap: " + result);
             return result;
         }
 
@@ -205,12 +203,12 @@ public class SslPipeHandler implements PipeHandler {
             }
         }
 
-        private int enlargePacketBufSize() {
-            return (packet_buf_size = getPacketBufSize() * 2);
+        private void enlargePacketBufSize() {
+            packet_buf_size = getPacketBufSize() * 2;
         }
 
-        private int enlargeApplicationBufSize() {
-            return (app_buf_size = getAppBufSize() * 2);
+        private void enlargeAppBufSize() {
+            app_buf_size = getAppBufSize() * 2;
         }
 
         private int getAppBufSize() {

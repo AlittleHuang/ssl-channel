@@ -71,6 +71,8 @@ class TcpConnection implements SelectionKeyHandler {
             }
             if (buf.flip().hasRemaining()) {
                 pipeline.onReceive(buf);
+            } else {
+                pipeline.free(buf);
             }
             if (read == -1) {
                 pipeline.onReceive(PipeHandler.END_OF_STREAM);
