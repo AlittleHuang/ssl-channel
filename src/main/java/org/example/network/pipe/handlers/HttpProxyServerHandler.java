@@ -1,5 +1,6 @@
 package org.example.network.pipe.handlers;
 
+import org.example.log.Logs;
 import org.example.network.pipe.PipeContext;
 import org.example.network.pipe.PipeHandler;
 import org.example.network.pipe.Pipeline;
@@ -7,15 +8,17 @@ import org.example.network.tcp.TcpClient;
 import org.example.network.tcp.TcpClient.Config;
 
 import java.io.IOException;
+import java.lang.System.Logger;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.logging.Logger;
+
+import static java.lang.System.Logger.Level.DEBUG;
+import static java.lang.System.Logger.Level.INFO;
 
 public class HttpProxyServerHandler implements PipeHandler {
 
-    private static final Logger logger = Logger
-            .getLogger(HttpProxyServerHandler.class.getName());
+    private static final Logger logger = Logs.getLogger(HttpProxyServerHandler.class);
 
     private boolean connectionEstablished;
     private Pipeline local;
@@ -41,13 +44,13 @@ public class HttpProxyServerHandler implements PipeHandler {
     private void establishConnection(PipeContext ctx, ByteBuffer buf) throws IOException {
         updateProxyRequest(ctx, buf);
         if (endRequest()) {
-            logger.finer(() -> "request header: " + new String(request));
+            logger.log(DEBUG, () -> "request header: " + new String(request));
             ProxyRequest pr = resoleRequestData();
             Config config = new Config();
             config.executor = ctx.executor();
             config.host = pr.host();
             config.port = pr.port();
-            logger.info("ACCEPT " + pr.method() + " " + config.host + ":" + config.port);
+            logger.log(INFO, "ACCEPT " + pr.method() + " " + config.host + ":" + config.port);
             if ("CONNECT".equals(pr.method)) {
                 ctx.pipeline().setAutoRead(false);
                 byte[] bytes = "HTTP/1.1 200 Connection Established\r\n\r\n".getBytes();

@@ -3,6 +3,7 @@ package org.example.network.event;
 import org.example.log.Logs;
 
 import java.io.IOException;
+import java.lang.System.Logger;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -10,9 +11,9 @@ import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Logger;
 
-import static java.util.logging.Level.WARNING;
+import static java.lang.System.Logger.Level.DEBUG;
+import static java.lang.System.Logger.Level.WARNING;
 
 public class EventLoopExecutor implements AutoCloseable {
 
@@ -98,17 +99,24 @@ public class EventLoopExecutor implements AutoCloseable {
     }
 
     private void work() {
-        while (!selector.keys().isEmpty() || getStatus() == STATUS_RUNNING) {
+        while (getStatus() == STATUS_RUNNING) {
             try {
                 doWork();
             } catch (Exception e) {
-                logger.log(WARNING, e, () -> "handler select error");
+                logger.log(WARNING, () -> "handler select error", e);
             }
+        }
+        try (selector) {
+            logger.log(DEBUG, () -> "close " + selector);
+        } catch (IOException e) {
+            logger.log(WARNING, () -> "close " + selector + " error", e);
         }
     }
 
     private void doWork() throws IOException {
-        selector.select();
+        if (getStatus() == STATUS_RUNNING) {
+            selector.select();
+        }
         Iterator<SelectionKey> it = selector.selectedKeys().iterator();
         while (it.hasNext()) {
             SelectionKey key = it.next();
@@ -137,7 +145,7 @@ public class EventLoopExecutor implements AutoCloseable {
         if (status.compareAndSet(STATUS_RUNNING, STATUS_CLOSE)) {
             selector.wakeup();
         } else {
-            logger.warning(() -> "error status " + getStatus());
+            logger.log(WARNING, () -> "error status " + getStatus());
         }
     }
 

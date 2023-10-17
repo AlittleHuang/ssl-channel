@@ -6,12 +6,14 @@ import org.example.network.pipe.PipeHandler;
 import org.example.network.pipe.Pipeline;
 
 import java.io.IOException;
+import java.lang.System.Logger;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Objects;
-import java.util.logging.Logger;
+
+import static java.lang.System.Logger.Level.DEBUG;
 
 
 public class TcpServer {
@@ -44,6 +46,7 @@ public class TcpServer {
                 if (child == null) {
                     return;
                 }
+                logger.log(DEBUG, () -> "accept " + child);
                 child.configureBlocking(false);
                 Pipeline pipeline = new Pipeline(child);
                 pipeline.setAutoRead(config.autoRead);
@@ -57,7 +60,7 @@ public class TcpServer {
         });
         InetSocketAddress address = new InetSocketAddress(config.host, config.port);
         channel.bind(address);
-        logger.fine(() -> "tpc server bind " + address + " success");
+        logger.log(DEBUG, () -> "tpc server bind " + address + " success");
     }
 
     public EventLoopExecutor executor() {

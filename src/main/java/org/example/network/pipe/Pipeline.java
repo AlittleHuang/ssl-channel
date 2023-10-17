@@ -6,10 +6,12 @@ import org.example.network.buf.CachedByteBufferAllocator;
 import org.example.network.event.EventLoopExecutor;
 
 import java.io.IOException;
+import java.lang.System.Logger;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import static java.lang.System.Logger.Level.DEBUG;
+import static java.lang.System.Logger.Level.WARNING;
 
 /**
  * <pre>
@@ -141,11 +143,11 @@ public class Pipeline implements ByteBufferAllocator {
 
         @Override
         public void onError(PipeContext ctx, Throwable throwable) {
-            logger.log(Level.WARNING, "Error reached end of pipeline, close channel", throwable);
+            logger.log(WARNING, "Error reached end of pipeline, close channel", throwable);
             try {
                 ctx.pipeline().channel.close();
             } catch (IOException e) {
-                logger.log(Level.WARNING, "close channel error", e);
+                logger.log(WARNING, "close channel error", e);
             }
         }
     }
@@ -156,7 +158,7 @@ public class Pipeline implements ByteBufferAllocator {
         @Override
         public void onReceive(PipeContext ctx, ByteBuffer buf) throws IOException {
             if (buf.hasRemaining()) {
-                logger.warning(() -> "Buffer has " + buf.remaining() + "remaining reached end of pipeline");
+                logger.log(WARNING, () -> "Buffer has " + buf.remaining() + "remaining reached end of pipeline");
             }
             if (buf == END_OF_STREAM) {
                 ctx.pipeline().close();
@@ -166,7 +168,7 @@ public class Pipeline implements ByteBufferAllocator {
 
         @Override
         public void onConnected(PipeContext ctx) {
-            logger.fine(() -> ctx.pipeline().channel + " connected");
+            logger.log(DEBUG, () -> ctx.pipeline().channel + " connected");
         }
     }
 }

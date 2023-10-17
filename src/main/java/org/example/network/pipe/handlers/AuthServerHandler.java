@@ -5,8 +5,9 @@ import org.example.network.pipe.PipeContext;
 import org.example.network.pipe.PipeHandler;
 
 import java.io.IOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.nio.ByteBuffer;
-import java.util.logging.Logger;
 
 public class AuthServerHandler implements PipeHandler {
 
@@ -30,7 +31,8 @@ public class AuthServerHandler implements PipeHandler {
         public void onReceive(PipeContext ctx, ByteBuffer buf) throws IOException {
             while (checkedLen < key.length && buf.hasRemaining()) {
                 if (key[checkedLen++] != buf.get()) {
-                    logger.warning("auth field");
+                    logger.log(Level.WARNING, "auth field");
+                    ctx.fireWrite(ByteBuffer.wrap("HTTP/1.1 403 FORBIDDEN\r\n\r\n".getBytes()));
                     ctx.fireClose();
                     return;
                 }

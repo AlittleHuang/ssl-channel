@@ -52,6 +52,7 @@ class SslHandlerTest {
                 ctx.fireReceive(buf);
                 if (buf == END_OF_STREAM) {
                     ctx.fireClose();
+                    ctx.executor().close();
                 }
             }
         };
@@ -59,7 +60,7 @@ class SslHandlerTest {
 
         TcpClient client = new TcpClient(config);
         Thread.sleep(1000);
-        // client.pipeline().executor().close();
+        client.executor().close();
     }
 
 }

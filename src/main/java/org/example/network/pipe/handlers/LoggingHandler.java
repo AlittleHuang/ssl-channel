@@ -6,10 +6,10 @@ import org.example.network.pipe.PipeContext;
 import org.example.network.pipe.PipeHandler;
 
 import java.io.IOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
 
 public class LoggingHandler implements PipeHandler {
 
@@ -17,11 +17,18 @@ public class LoggingHandler implements PipeHandler {
 
     private Level level = Level.INFO;
 
-    public Level getLevel() {
+    public LoggingHandler() {
+    }
+
+    public LoggingHandler(Level level) {
+        this.level = level;
+    }
+
+    public Logger.Level getLevel() {
         return level;
     }
 
-    public void setLevel(Level level) {
+    public void setLevel(Logger.Level level) {
         this.level = level;
     }
 

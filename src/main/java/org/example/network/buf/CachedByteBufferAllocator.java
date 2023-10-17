@@ -2,6 +2,8 @@ package org.example.network.buf;
 
 import org.example.log.Logs;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.*;
@@ -10,8 +12,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 
 public class CachedByteBufferAllocator implements ByteBufferAllocator, AutoCloseable {
@@ -162,7 +162,7 @@ public class CachedByteBufferAllocator implements ByteBufferAllocator, AutoClose
                     deque.addFirst(wrap);
                     size++;
                 } else {
-                    logger.fine("buffer is already in cache");
+                    logger.log(Level.WARNING, "buffer is already in cache");
                 }
             });
         }

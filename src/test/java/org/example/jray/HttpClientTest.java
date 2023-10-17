@@ -17,7 +17,7 @@ public class HttpClientTest {
                 .proxy(ProxySelector.of(new InetSocketAddress(1090)))
                 .build();
 
-        HttpRequest request = HttpRequest.newBuilder(URI.create("https://www.baidu.com")).build();
+        HttpRequest request = HttpRequest.newBuilder(URI.create("http://www.baidu.com")).build();
         String body = client.send(request, BodyHandlers.ofString(StandardCharsets.UTF_8)).body();
         System.out.println(body);
 

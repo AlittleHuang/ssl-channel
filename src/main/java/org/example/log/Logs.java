@@ -17,8 +17,8 @@ public class Logs {
         }
     }
 
-    public static Logger getLogger(Class<?> clazz) {
-        return Logger.getLogger(clazz.getName());
+    public static System.Logger getLogger(Class<?> clazz) {
+        return System.getLogger(clazz.getName());
     }
 
 
