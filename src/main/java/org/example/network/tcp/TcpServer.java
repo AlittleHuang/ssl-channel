@@ -1,6 +1,7 @@
 package org.example.network.tcp;
 
 import org.example.log.Logs;
+import org.example.network.buf.Bytes;
 import org.example.network.event.EventLoopExecutor;
 import org.example.network.pipe.PipeHandler;
 import org.example.network.pipe.Pipeline;
@@ -37,7 +38,7 @@ public class TcpServer {
         }
 
         this.bufCapacity = config.bufCapacity <= 0
-                ? 1024 * 8 : config.bufCapacity;
+                ? Bytes.DEF_CAP : config.bufCapacity;
         this.channel = ServerSocketChannel.open();
         channel.configureBlocking(false);
         executor.register(channel, SelectionKey.OP_ACCEPT, key -> {

@@ -6,6 +6,7 @@ import org.example.network.pipe.PipeHandler;
 import org.example.network.pipe.Pipeline;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
@@ -81,5 +82,9 @@ class TcpConnection implements SelectionKeyHandler {
                 }
             }
         }
+    }
+
+    public void connect(InetSocketAddress address) throws IOException {
+        pipeline.connect(address);
     }
 }

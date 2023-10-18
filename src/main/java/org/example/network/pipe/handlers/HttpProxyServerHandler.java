@@ -1,6 +1,7 @@
 package org.example.network.pipe.handlers;
 
 import org.example.log.Logs;
+import org.example.network.buf.Bytes;
 import org.example.network.pipe.PipeContext;
 import org.example.network.pipe.PipeHandler;
 import org.example.network.pipe.Pipeline;
@@ -13,7 +14,9 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-import static java.lang.System.Logger.Level.*;
+import static java.lang.System.Logger.Level.INFO;
+import static java.lang.System.Logger.Level.TRACE;
+import static org.example.network.pipe.handlers.HttpUtil.DOUBLE_NEWLINE;
 
 public class HttpProxyServerHandler implements PipeHandler {
 
@@ -53,7 +56,7 @@ public class HttpProxyServerHandler implements PipeHandler {
             logger.log(INFO, "ACCEPT " + pr.method() + " " + config.host + ":" + config.port);
             if ("CONNECT".equals(pr.method)) {
                 ctx.pipeline().setAutoRead(false);
-                byte[] bytes = "HTTP/1.1 200 Connection Established\r\n\r\n".getBytes();
+                byte[] bytes = "HTTP/1.1 200 Connection established\r\n\r\n".getBytes();
                 ByteBuffer bf = ByteBuffer.wrap(bytes).asReadOnlyBuffer();
                 ctx.fireWrite(bf);
             }
@@ -108,7 +111,7 @@ public class HttpProxyServerHandler implements PipeHandler {
     }
 
     private boolean endRequest() {
-        byte[] end = "\r\n\r\n".getBytes();
+        byte[] end = DOUBLE_NEWLINE;
         int rl = request.length;
         int el = end.length;
         if (rl <= el) {
@@ -184,7 +187,7 @@ public class HttpProxyServerHandler implements PipeHandler {
 
     private void updateProxyRequest(PipeContext ctx, ByteBuffer buf) throws IOException {
         int len = request.length + buf.remaining();
-        if (len > 8 * 1024) {
+        if (len > Bytes.DEF_CAP) {
             ctx.fireClose();
             throw new IllegalStateException("too lage request");
         }

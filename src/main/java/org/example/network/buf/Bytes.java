@@ -8,6 +8,9 @@ public class Bytes {
 
     public static final int G = M * K;
 
+    public static final int DEF_CAP = 8 * K;
+
+
     private static final int MARK = K - 1;
 
     private static final int MARK_1 = ~MARK;

@@ -21,5 +21,4 @@ public class AuthClientHandler implements PipeHandler {
         ctx.remove();
     }
 
-
 }

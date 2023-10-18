@@ -6,8 +6,11 @@ import org.example.network.buf.CachedByteBufferAllocator;
 import org.example.network.event.EventLoopExecutor;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.lang.System.Logger;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
 
 import static java.lang.System.Logger.Level.DEBUG;
@@ -76,7 +79,7 @@ public class Pipeline implements ByteBufferAllocator {
     }
 
     public void connected() throws IOException {
-        head.onConnect();
+        head.onConnected();
     }
 
     public WritableByteChannel getChannel() {
@@ -127,6 +130,10 @@ public class Pipeline implements ByteBufferAllocator {
         tail.fireClose();
     }
 
+    public void connect(InetSocketAddress address) throws IOException {
+        tail.fireConnect(address);
+    }
+
     static class HeadHandler implements PipeHandler {
         @Override
         public void onWrite(PipeContext ctx, ByteBuffer buf) throws IOException {
@@ -148,6 +155,15 @@ public class Pipeline implements ByteBufferAllocator {
                 ctx.pipeline().channel.close();
             } catch (IOException e) {
                 logger.log(WARNING, "close channel error", e);
+            }
+        }
+
+        @Override
+        public void onConnect(PipeContext context, InetSocketAddress address) throws IOException {
+            if (context.pipeline().getChannel() instanceof SocketChannel channel) {
+                channel.connect(address);
+            } else {
+                throw new UnsupportedEncodingException();
             }
         }
     }

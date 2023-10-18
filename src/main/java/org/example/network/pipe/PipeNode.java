@@ -2,10 +2,14 @@ package org.example.network.pipe;
 
 
 import org.example.network.event.EventLoopExecutor;
+import org.example.network.pipe.handlers.HandlerUtil;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static org.example.network.pipe.handlers.HandlerUtil.MethodDeclaring.*;
 
 public class PipeNode implements PipeContext {
 
@@ -39,7 +43,6 @@ public class PipeNode implements PipeContext {
         return node;
     }
 
-
     @Override
     public PipeContext addAfter(PipeHandler handler) {
         PipeNode node = new PipeNode(pipeline, handler);
@@ -57,6 +60,22 @@ public class PipeNode implements PipeContext {
     public PipeContext addLast(PipeHandler handler) {
         return pipeline.addLast(handler);
     }
+
+
+    @Override
+    public void remove() {
+        link(pre, next);
+        pre = next = null;
+    }
+
+    @Override
+    public void replace(PipeHandler handler) {
+        PipeNode node = new PipeNode(pipeline, handler);
+        link(pre, node, next);
+        node.init();
+        pre = next = null;
+    }
+
 
     @Override
     public Pipeline pipeline() {
@@ -79,6 +98,9 @@ public class PipeNode implements PipeContext {
     @Override
     public void fireReceive(ByteBuffer buf) throws IOException {
         PipeNode node = next;
+        while (node != null && HandlerUtil.isDefault(ON_RECEIVE, node.handler)) {
+            node = node.next;
+        }
         if (node != null) {
             node.onReceive(buf);
         }
@@ -87,6 +109,9 @@ public class PipeNode implements PipeContext {
     @Override
     public void fireWrite(ByteBuffer buf) throws IOException {
         PipeNode node = pre;
+        while (node != null && HandlerUtil.isDefault(ON_WRITE, node.handler)) {
+            node = node.pre;
+        }
         if (node != null) {
             node.onWrite(buf);
         }
@@ -95,44 +120,54 @@ public class PipeNode implements PipeContext {
     @Override
     public void fireConnected() throws IOException {
         PipeNode node = next;
-        if (node != null) {
-            node.onConnect();
+        while (node != null && HandlerUtil.isDefault(ON_CONNECTED, node.handler)) {
+            node = node.next;
         }
-    }
-
-    @Override
-    public void remove() {
-        link(pre, next);
-        pre = next = null;
+        if (node != null) {
+            node.onConnected();
+        }
     }
 
     @Override
     public void fireClose() throws IOException {
         PipeNode node = pre;
+        while (node != null && HandlerUtil.isDefault(ON_CLOSE, node.handler)) {
+            node = node.pre;
+        }
         if (node != null) {
             node.onClose();
         }
     }
 
     @Override
-    public EventLoopExecutor executor() {
-        return pipeline.executor();
-    }
-
-    @Override
-    public void replace(PipeHandler handler) {
-        PipeNode node = new PipeNode(pipeline, handler);
-        link(pre, node, next);
-        node.init();
-        pre = next = null;
-    }
-
-    @Override
     public void fireError(Throwable throwable) {
         PipeNode node = pre;
+        while (node != null && HandlerUtil.isDefault(ON_ERROR, node.handler)) {
+            node = node.pre;
+        }
         if (node != null) {
             node.onError(throwable);
         }
+    }
+
+    @Override
+    public void fireConnect(InetSocketAddress address) throws IOException {
+        PipeNode node = pre;
+        while (node != null && HandlerUtil.isDefault(ON_CONNECT, node.handler)) {
+            node = node.pre;
+        }
+        if (node != null) {
+            node.onConnect(address);
+        }
+    }
+
+    private void onConnect(InetSocketAddress address) throws IOException {
+        handler.onConnect(this, address);
+    }
+
+    @Override
+    public EventLoopExecutor executor() {
+        return pipeline.executor();
     }
 
     private void onClose() throws IOException {
@@ -151,7 +186,7 @@ public class PipeNode implements PipeContext {
         handler.onWrite(this, buf);
     }
 
-    public void onConnect() throws IOException {
+    public void onConnected() throws IOException {
         handler.onConnected(this);
     }
 

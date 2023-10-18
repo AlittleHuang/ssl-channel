@@ -1,44 +1,36 @@
-package org.example.network.event.pipe.handlers;
+package org.example.network.pipe.handlers;
 
 import org.example.network.buf.ByteBufferUtil;
 import org.example.network.buf.CachedByteBufferAllocator;
 import org.example.network.event.EventLoopExecutor;
 import org.example.network.pipe.PipeContext;
 import org.example.network.pipe.PipeHandler;
-import org.example.network.pipe.handlers.HandlerUtil;
-import org.example.network.pipe.handlers.HandlerUtil.MethodDeclaring;
-import org.example.network.pipe.handlers.SslPipeHandler;
 import org.example.network.tcp.TcpClient;
 import org.example.network.tcp.TcpClient.Config;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.Selector;
 import java.security.NoSuchAlgorithmException;
 
-class SslHandlerTest {
+class HttpProxyHandlerTest {
 
-
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws IOException, InterruptedException {
         CachedByteBufferAllocator allocator = (CachedByteBufferAllocator) CachedByteBufferAllocator.globalHeap();
         allocator.setExpirationInterval(500);
         Config config = new Config();
 
         config.host = "www.baidu.com";
-        config.port = 443;
+        config.port = 80;
         config.executor = EventLoopExecutor.open(Selector.open());
         config.handler = new PipeHandler() {
 
             @Override
             public void init(PipeContext ctx) {
-                try {
-                    ctx.addBefore(new PipeHandler() {
-                    });
-                    ctx.addFirst(new SslPipeHandler(SSLContext.getDefault(), true));
-                } catch (NoSuchAlgorithmException e) {
-                    throw new RuntimeException(e);
-                }
+                ctx.addFirst(new HttpProxyHandler(new InetSocketAddress(1090)));
+                ctx.addFirst(new LoggingHandler());
             }
 
             @Override

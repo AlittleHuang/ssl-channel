@@ -1,5 +1,6 @@
 package org.example.network.tcp;
 
+import org.example.network.buf.Bytes;
 import org.example.network.event.EventLoopExecutor;
 import org.example.network.pipe.PipeHandler;
 import org.example.network.pipe.Pipeline;
@@ -31,13 +32,13 @@ public class TcpClient {
         pipeline.setAutoRead(config.autoRead);
         pipeline.addFirst(config.handler);
         channel.configureBlocking(false);
-        int bufCapacity = config.bufCapacity <= 0 ? 1024 * 8 : config.bufCapacity;
+        int bufCapacity = config.bufCapacity <= 0 ? Bytes.DEF_CAP : config.bufCapacity;
         connection = new TcpConnection(
                 pipeline, channel, bufCapacity
         );
         executor.register(connection);
         InetSocketAddress address = new InetSocketAddress(config.host, config.port);
-        channel.connect(address);
+        connection.connect(address);
     }
 
     public EventLoopExecutor executor() {

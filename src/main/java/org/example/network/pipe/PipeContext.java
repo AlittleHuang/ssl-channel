@@ -3,6 +3,7 @@ package org.example.network.pipe;
 import org.example.network.event.EventLoopExecutor;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 public interface PipeContext {
@@ -51,5 +52,7 @@ public interface PipeContext {
     void replace(PipeHandler handler);
 
     void fireError(Throwable throwable);
+
+    void fireConnect(InetSocketAddress address) throws IOException;
 }
 
