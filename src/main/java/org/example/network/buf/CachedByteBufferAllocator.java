@@ -38,10 +38,6 @@ public class CachedByteBufferAllocator implements ByteBufferAllocator, AutoClose
         this.target = target;
     }
 
-    public static ByteBufferAllocator globalHeap() {
-        return HEAP;
-    }
-
     @Override
     public ByteBuffer allocate(int capacity) {
         return cacheMap.computeIfAbsent(capacity, Cache::new)

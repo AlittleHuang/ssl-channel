@@ -1,25 +1,20 @@
 package org.example.network.pipe.handlers;
 
 import org.example.network.buf.ByteBufferUtil;
-import org.example.network.buf.CachedByteBufferAllocator;
 import org.example.network.event.EventLoopExecutor;
 import org.example.network.pipe.PipeContext;
 import org.example.network.pipe.PipeHandler;
 import org.example.network.tcp.TcpClient;
 import org.example.network.tcp.TcpClient.Config;
 
-import javax.net.ssl.SSLContext;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.Selector;
-import java.security.NoSuchAlgorithmException;
 
 class HttpProxyHandlerTest {
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        CachedByteBufferAllocator allocator = (CachedByteBufferAllocator) CachedByteBufferAllocator.globalHeap();
-        allocator.setExpirationInterval(500);
         Config config = new Config();
 
         config.host = "www.baidu.com";

@@ -7,6 +7,7 @@ import org.example.network.pipe.Pipeline;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
@@ -64,7 +65,7 @@ class TcpConnection implements SelectionKeyHandler {
             pipeline.setRequiredRead(false);
             ByteBuffer buf = pipeline.allocate(bufCapacity);
             int read;
-            while ((read = channel.read(buf)) > 0) {
+            while ((read = read(buf)) > 0) {
                 if (buf.position() == buf.limit()) {
                     pipeline.onReceive(buf.flip());
                     buf = pipeline.allocate(bufCapacity);
@@ -81,6 +82,17 @@ class TcpConnection implements SelectionKeyHandler {
                     key.interestOps(key.interestOps() & (~SelectionKey.OP_READ));
                 }
             }
+        }
+    }
+
+    private int read(ByteBuffer buf) throws IOException {
+        try {
+            return channel.read(buf);
+        } catch (SocketException e) {
+            return -1;
+        } catch (Exception e) {
+            pipeline.free(buf);
+            throw e;
         }
     }
 

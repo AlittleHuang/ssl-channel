@@ -1,12 +1,9 @@
 package org.example.network.event.pipe.handlers;
 
 import org.example.network.buf.ByteBufferUtil;
-import org.example.network.buf.CachedByteBufferAllocator;
 import org.example.network.event.EventLoopExecutor;
 import org.example.network.pipe.PipeContext;
 import org.example.network.pipe.PipeHandler;
-import org.example.network.pipe.handlers.HandlerUtil;
-import org.example.network.pipe.handlers.HandlerUtil.MethodDeclaring;
 import org.example.network.pipe.handlers.SslPipeHandler;
 import org.example.network.tcp.TcpClient;
 import org.example.network.tcp.TcpClient.Config;
@@ -21,8 +18,6 @@ class SslHandlerTest {
 
 
     public static void main(String[] args) throws Exception {
-        CachedByteBufferAllocator allocator = (CachedByteBufferAllocator) CachedByteBufferAllocator.globalHeap();
-        allocator.setExpirationInterval(500);
         Config config = new Config();
 
         config.host = "www.baidu.com";

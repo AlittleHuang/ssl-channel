@@ -2,7 +2,7 @@ package org.example.network.pipe;
 
 import org.example.log.Logs;
 import org.example.network.buf.ByteBufferAllocator;
-import org.example.network.buf.CachedByteBufferAllocator;
+import org.example.network.buf.PooledAllocator;
 import org.example.network.event.EventLoopExecutor;
 
 import java.io.IOException;
@@ -46,7 +46,7 @@ public class Pipeline implements ByteBufferAllocator {
 
     public Pipeline(WritableByteChannel channel) {
         this.channel = channel;
-        this.allocator = CachedByteBufferAllocator.globalHeap();
+        this.allocator = PooledAllocator.GLOBAL;
         this.head = node(new HeadHandler());
         this.tail = node(new TailHandler());
         PipeNode.link(head, tail);
