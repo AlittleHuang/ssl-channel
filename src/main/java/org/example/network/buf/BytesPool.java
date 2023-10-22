@@ -1,6 +1,7 @@
 package org.example.network.buf;
 
 import org.example.log.Logs;
+import org.example.network.buf.ExpiredCacheCleaner.Clearable;
 
 import java.lang.System.Logger;
 import java.time.Duration;
@@ -10,7 +11,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import static java.lang.System.Logger.Level.*;
 
-public class BytesPool {
+public class BytesPool implements Clearable {
 
 
     public static final Logger logger = Logs.getLogger(BytesPool.class);
@@ -59,37 +60,15 @@ public class BytesPool {
                 if (pool.add(bytes)) {
                     times.addLast(System.currentTimeMillis());
                     logger.log(ALL, () -> "pooled " + identity(bytes) + ", size: " + pool.size());
+                    if (pool.size() == 1) {
+                        ExpiredCacheCleaner.getInstance().register(this);
+                    }
                 } else {
                     logger.log(WARNING, () -> identity(bytes) + "bytes is already in pool");
                 }
             } else {
                 logger.log(DEBUG, () -> "pool is full, size: " + pool.size());
             }
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    public void cleanExpired() {
-        lock.lock();
-        try {
-            int oldSize = pool.size();
-            long earliest = System.currentTimeMillis() - expiration;
-            Iterator<byte[]> it = pool.iterator();
-            while (true) {
-                Long time = times.peekFirst();
-                if (time != null && time < earliest) {
-                    times.removeFirst();
-                    if (it.hasNext()) {
-                        byte[] bytes = it.next();
-                        it.remove();
-                        logger.log(ALL, () -> "clear " + identity(bytes));
-                    }
-                } else {
-                    break;
-                }
-            }
-            logger.log(ALL, () -> "pool size: " + oldSize + " -> " + pool.size());
         } finally {
             lock.unlock();
         }
@@ -123,4 +102,30 @@ public class BytesPool {
     }
 
 
+    @Override
+    public boolean clear() {
+        lock.lock();
+        try {
+            int oldSize = pool.size();
+            long earliest = System.currentTimeMillis() - expiration;
+            Iterator<byte[]> it = pool.iterator();
+            while (true) {
+                Long time = times.peekFirst();
+                if (time != null && time < earliest) {
+                    times.removeFirst();
+                    if (it.hasNext()) {
+                        byte[] bytes = it.next();
+                        it.remove();
+                        logger.log(ALL, () -> "clear " + identity(bytes));
+                    }
+                } else {
+                    break;
+                }
+            }
+            logger.log(ALL, () -> "pool size: " + oldSize + " -> " + pool.size());
+            return pool.isEmpty();
+        } finally {
+            lock.unlock();
+        }
+    }
 }

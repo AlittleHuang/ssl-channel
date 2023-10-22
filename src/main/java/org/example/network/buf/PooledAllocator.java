@@ -1,20 +1,13 @@
 package org.example.network.buf;
 
-import org.example.log.Logs;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.System.Logger;
-import java.lang.System.Logger.Level;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.LockSupport;
 
-public class PooledAllocator implements ByteBufferAllocator, AutoCloseable {
-
-    private static final Logger logger = Logs.getLogger(PooledAllocator.class);
+public class PooledAllocator implements ByteBufferAllocator {
 
     public static final PooledAllocator GLOBAL = new PooledAllocator();
 
@@ -22,18 +15,9 @@ public class PooledAllocator implements ByteBufferAllocator, AutoCloseable {
 
     private final Map<Integer, BytesPool> pools = new ConcurrentHashMap<>();
 
-    private boolean closed;
-
     private int maxPoolSize = Bytes.K;
 
     private long expiration = Duration.ofMinutes(1).toMillis();
-
-    private Duration clearPeriod = Duration.ofSeconds(10);
-
-
-    {
-        Thread.startVirtualThread(this::clearExpired);
-    }
 
     @Override
     public ByteBuffer allocate(int capacity) {
@@ -64,26 +48,6 @@ public class PooledAllocator implements ByteBufferAllocator, AutoCloseable {
     }
 
 
-    private void clearExpired() {
-        long nanos = clearPeriod.toNanos();
-        while (!closed) {
-            try {
-                LockSupport.parkNanos(nanos);
-                for (BytesPool value : pools.values()) {
-                    value.cleanExpired();
-                }
-            } catch (Exception e) {
-                logger.log(Level.WARNING, "clean cache error", e);
-            }
-        }
-    }
-
-    @Override
-    public void close() {
-        closed = true;
-    }
-
-
     public int getMaxPoolSize() {
         return maxPoolSize;
     }
@@ -106,7 +70,4 @@ public class PooledAllocator implements ByteBufferAllocator, AutoCloseable {
         }
     }
 
-    public void setClearPeriod(Duration clearPeriod) {
-        this.clearPeriod = Objects.requireNonNull(clearPeriod);
-    }
 }

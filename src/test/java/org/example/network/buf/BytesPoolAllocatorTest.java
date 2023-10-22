@@ -9,7 +9,6 @@ class BytesPoolAllocatorTest {
 
 
     public static void main(String[] args) throws InterruptedException {
-        GLOBAL.setClearPeriod(Duration.ofMillis(1000));
 
         ByteBuffer buffer = GLOBAL.allocate(Bytes.DEF_CAP);
 

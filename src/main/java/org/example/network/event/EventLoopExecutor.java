@@ -1,6 +1,7 @@
 package org.example.network.event;
 
 import org.example.log.Logs;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.lang.System.Logger;
@@ -28,10 +29,18 @@ public class EventLoopExecutor implements AutoCloseable {
 
     private final Selector selector;
     private final AtomicInteger status = new AtomicInteger();
-    private final Thread thread = new Thread(this::work);
+    private final Thread thread = getWorkThread();
+
+    @NotNull
+    private Thread getWorkThread() {
+        Thread thread = new Thread(this::work);
+        thread.setDaemon(true);
+        return thread;
+    }
+
     private final ExecutorService executorService;
 
-    public EventLoopExecutor(Selector selector, ExecutorService executor) {
+    private EventLoopExecutor(Selector selector, ExecutorService executor) {
         this.selector = selector;
         this.executorService = executor;
     }
@@ -142,6 +151,9 @@ public class EventLoopExecutor implements AutoCloseable {
 
     @Override
     public void close() {
+        if (DEFAULT == this) {
+            throw new UnsupportedOperationException();
+        }
         if (status.compareAndSet(STATUS_RUNNING, STATUS_CLOSE)) {
             selector.wakeup();
         } else {
