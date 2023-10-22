@@ -7,6 +7,7 @@ import org.example.network.pipe.PipeHandler;
 import java.io.IOException;
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 public class AuthServerHandler implements PipeHandler {
@@ -38,9 +39,17 @@ public class AuthServerHandler implements PipeHandler {
                 }
             }
             if (checkedLen == key.length) {
-                ctx.fireReceive(buf);
+                ctx.fireConnected();
+                if (buf.hasRemaining()) {
+                    ctx.fireReceive(buf);
+                }
                 ctx.remove();
             }
+        }
+
+        @Override
+        public void onConnect(PipeContext ctx, InetSocketAddress address) throws IOException {
+
         }
     }
 

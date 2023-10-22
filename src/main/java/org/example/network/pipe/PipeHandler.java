@@ -31,8 +31,8 @@ public interface PipeHandler {
         ctx.fireError(throwable);
     }
 
-    default void onConnect(PipeContext context, InetSocketAddress address) throws IOException {
-        context.fireConnect(address);
+    default void onConnect(PipeContext ctx, InetSocketAddress address) throws IOException {
+        ctx.fireConnect(address);
     }
 
 }

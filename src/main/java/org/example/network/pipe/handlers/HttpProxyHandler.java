@@ -23,8 +23,8 @@ public class HttpProxyHandler implements PipeHandler {
     }
 
     @Override
-    public void onConnect(PipeContext context, InetSocketAddress address) throws IOException {
-        context.fireConnect(server);
+    public void onConnect(PipeContext ctx, InetSocketAddress address) throws IOException {
+        ctx.fireConnect(server);
         this.target = address;
     }
 

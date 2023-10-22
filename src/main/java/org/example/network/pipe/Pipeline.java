@@ -180,8 +180,8 @@ public class Pipeline implements ByteBufferAllocator {
         }
 
         @Override
-        public void onConnect(PipeContext context, InetSocketAddress address) throws IOException {
-            if (context.pipeline().getChannel() instanceof SocketChannel channel) {
+        public void onConnect(PipeContext ctx, InetSocketAddress address) throws IOException {
+            if (ctx.pipeline().getChannel() instanceof SocketChannel channel) {
                 channel.connect(address);
             } else {
                 throw new UnsupportedEncodingException();
