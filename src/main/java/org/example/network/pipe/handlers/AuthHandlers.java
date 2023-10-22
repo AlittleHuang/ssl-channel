@@ -25,17 +25,4 @@ public class AuthHandlers {
         return AUTH_SERVER_HANDLER;
     }
 
-    public static void main(String[] args) {
-        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES * 4);
-
-        for (int i = 0; i < 2; i++) {
-            UUID uuid = UUID.randomUUID();
-            buffer.putLong(uuid.getLeastSignificantBits());
-            buffer.putLong(uuid.getMostSignificantBits());
-        }
-
-        System.out.println(Arrays.toString(buffer.array()));
-
-    }
-
 }

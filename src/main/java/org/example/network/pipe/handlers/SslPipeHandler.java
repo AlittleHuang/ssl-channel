@@ -124,11 +124,11 @@ public class SslPipeHandler implements PipeHandler {
                 ctx.free(unwrap_src);
                 this.unwrap_src = null;
             }
+            SSLEngineResult r = result;
+            logger.log(TRACE, () -> ctx.pipeline().getChannel() + "unwrap: " + SslPipeHandler.toString(r));
             if (result.getHandshakeStatus() == FINISHED) {
                 handshakeFinished(ctx);
             }
-            SSLEngineResult r = result;
-            logger.log(TRACE, () -> "unwrap: " + r);
             return result;
         }
 
@@ -180,6 +180,8 @@ public class SslPipeHandler implements PipeHandler {
             SSLEngineResult result = engine.wrap(wrap_src, wrap_dst);
             if (wrap_dst.flip().hasRemaining()) {
                 ctx.fireWrite(wrap_dst);
+            } else {
+                ctx.free(wrap_dst);
             }
             Status status = result.getStatus();
             if (status == BUFFER_OVERFLOW) {
@@ -188,17 +190,18 @@ public class SslPipeHandler implements PipeHandler {
             } else if (status == CLOSED) {
                 engine.closeOutbound();
             }
-            if (result.getHandshakeStatus() == FINISHED) {
-                handshakeFinished(ctx);
-            }
-            logger.log(TRACE, () -> "wrap: " + result);
+            logger.log(TRACE, () -> ctx.pipeline().getChannel() + "wrap: " + SslPipeHandler.toString(result));
+            // if (result.getHandshakeStatus() == FINISHED) {
+            //     handshakeFinished(ctx);
+            // }
+            ctx.free(wrap_src);
             return result;
         }
 
         private void handshakeFinished(PipeContext ctx) throws IOException {
             if (!handshakeFinished) {
                 handshakeFinished = true;
-                logger.log(TRACE, "handshake finished");
+                logger.log(TRACE, () -> ctx.pipeline().getChannel() + "handshake finished");
                 ctx.fireConnected();
             }
         }
@@ -228,5 +231,12 @@ public class SslPipeHandler implements PipeHandler {
         }
     }
 
+    private static String toString(SSLEngineResult result) {
+        return "Status = " + result.getStatus()
+               + " HandshakeStatus = " + result.getHandshakeStatus()
+               + " bytesConsumed = " + result.bytesConsumed()
+               + " bytesProduced = " + result.bytesProduced()
+               + " sequenceNumber = " + result.sequenceNumber();
+    }
 
 }

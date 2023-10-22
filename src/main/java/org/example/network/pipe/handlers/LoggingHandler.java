@@ -34,13 +34,19 @@ public class LoggingHandler implements PipeHandler {
 
     @Override
     public void onReceive(PipeContext ctx, ByteBuffer buf) throws IOException {
-        logger.log(level, () -> ctx.pipeline().getChannel() + "receive:\n" + new String(ByteBufferUtil.copyAsArray(buf)));
+        logger.log(level, () -> {
+            String s = ByteBufferUtil.copyAsString(buf);
+            return ctx.pipeline().getChannel() + "receive: " + buf.remaining() + " bytes:\n"
+                   + s;
+        });
         ctx.fireReceive(buf);
     }
 
+
     @Override
     public void onWrite(PipeContext ctx, ByteBuffer buf) throws IOException {
-        logger.log(level, () -> ctx.pipeline().getChannel() + "write:\n" + new String(ByteBufferUtil.copyAsArray(buf)));
+        logger.log(level, () -> ctx.pipeline().getChannel() + "write: " + buf.remaining() + " bytes:\n"
+                                + ByteBufferUtil.copyAsString(buf));
         ctx.fireWrite(buf);
     }
 }

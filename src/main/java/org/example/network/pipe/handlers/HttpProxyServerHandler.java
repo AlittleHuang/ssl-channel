@@ -73,6 +73,7 @@ public class HttpProxyServerHandler implements PipeHandler {
                         ctx.fireWrite(pr.forward());
                     } else {
                         local.setAutoRead(true);
+                        local.executor().getSelector().wakeup();
                     }
                     ctx.fireConnected();
                 }

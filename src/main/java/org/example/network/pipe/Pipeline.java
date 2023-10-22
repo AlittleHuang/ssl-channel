@@ -2,19 +2,20 @@ package org.example.network.pipe;
 
 import org.example.log.Logs;
 import org.example.network.buf.ByteBufferAllocator;
+import org.example.network.buf.ByteBufferUtil;
 import org.example.network.buf.PooledAllocator;
 import org.example.network.event.EventLoopExecutor;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
 
-import static java.lang.System.Logger.Level.DEBUG;
-import static java.lang.System.Logger.Level.WARNING;
+import static java.lang.System.Logger.Level.*;
 
 /**
  * <pre>
@@ -42,6 +43,7 @@ public class Pipeline implements ByteBufferAllocator {
     private boolean requiredRead;
 
     private EventLoopExecutor executor;
+    private boolean closed;
 
 
     public Pipeline(WritableByteChannel channel) {
@@ -127,6 +129,7 @@ public class Pipeline implements ByteBufferAllocator {
     }
 
     public void close() throws IOException {
+        this.closed = true;
         tail.fireClose();
     }
 
@@ -134,23 +137,41 @@ public class Pipeline implements ByteBufferAllocator {
         tail.fireConnect(address);
     }
 
+    public boolean isClosed() {
+        return closed || !channel.isOpen();
+    }
+
     static class HeadHandler implements PipeHandler {
         @Override
         public void onWrite(PipeContext ctx, ByteBuffer buf) throws IOException {
-            while (buf.hasRemaining()) {
-                ctx.pipeline().channel.write(buf);
+            try {
+                while (buf.hasRemaining()) {
+                    ctx.pipeline().channel.write(buf);
+                }
+            } catch (Exception e) {
+                ctx.pipeline().onError(e);
+            } finally {
+                ctx.free(buf);
             }
-            ctx.free(buf);
         }
 
         @Override
         public void onClose(PipeContext ctx) throws IOException {
-            ctx.pipeline().channel.close();
+            try {
+                ctx.pipeline().channel.close();
+            } catch (IOException e) {
+                logger.log(WARNING, () -> ctx.pipeline().getChannel() + " close error: " + e.getClass().getName() + " : " + e.getLocalizedMessage());
+            }
         }
 
         @Override
         public void onError(PipeContext ctx, Throwable throwable) {
-            logger.log(WARNING, "Error reached end of pipeline, close channel", throwable);
+            if (throwable instanceof IOException) {
+                logger.log(INFO, () -> ctx.pipeline().getChannel() + " - Error reached end of pipeline, close channel: "
+                                       + throwable.getClass().getName() + " : " + throwable.getLocalizedMessage());
+            } else {
+                logger.log(WARNING, () -> ctx.pipeline().getChannel() + " - Error reached end of pipeline, close channel", throwable);
+            }
             try {
                 ctx.pipeline().channel.close();
             } catch (IOException e) {

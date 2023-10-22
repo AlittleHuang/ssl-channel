@@ -124,7 +124,7 @@ public class EventLoopExecutor implements AutoCloseable {
 
     private void doWork() throws IOException {
         if (getStatus() == STATUS_RUNNING) {
-            selector.select();
+            selector.select(10);
         }
         Iterator<SelectionKey> it = selector.selectedKeys().iterator();
         while (it.hasNext()) {

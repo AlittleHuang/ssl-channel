@@ -36,9 +36,9 @@ public class TcpClient {
         connection = new TcpConnection(
                 pipeline, channel, bufCapacity
         );
-        executor.register(connection);
         InetSocketAddress address = new InetSocketAddress(config.host, config.port);
         connection.connect(address);
+        executor.register(connection);
     }
 
     public EventLoopExecutor executor() {

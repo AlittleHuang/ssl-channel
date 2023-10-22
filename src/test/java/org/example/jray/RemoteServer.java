@@ -17,7 +17,7 @@ public class RemoteServer {
         config.handler = new PipeHandler() {
             @Override
             public void init(PipeContext ctx) {
-                ctx.addBefore(AuthHandlers.server());
+                // ctx.addBefore(AuthHandlers.server());
                 ctx.addBefore(new HttpProxyServerInitializer());
             }
         };

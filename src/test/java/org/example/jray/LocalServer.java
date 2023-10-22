@@ -20,6 +20,7 @@ public class LocalServer {
             @Override
             public void init(PipeContext ctx) {
                 try {
+                    ctx.addBefore(new LoggingHandler());
                     ctx.replace(new RelayHandler(ctx.pipeline(), "127.0.0.1", 1091));
                 } catch (IOException e) {
                     ctx.fireError(e);

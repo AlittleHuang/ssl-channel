@@ -35,14 +35,14 @@ public class BytesPool implements Clearable {
                 byte[] next = it.next();
                 it.remove();
                 times.removeLast();
-                logger.log(ALL, () -> "get: " + identity(next) + ", pool size: " + pool.size());
+                logger.log(TRACE, () -> "get: " + identity(next) + ", pool size: " + pool.size());
                 return next;
             }
         } finally {
             lock.unlock();
         }
         byte[] bytes = new byte[length];
-        logger.log(TRACE, () -> "new " + identity(bytes));
+        logger.log(INFO, () -> "new " + identity(bytes));
         return bytes;
     }
 
@@ -59,7 +59,7 @@ public class BytesPool implements Clearable {
             if (pool.size() < maxPoolSize) {
                 if (pool.add(bytes)) {
                     times.addLast(System.currentTimeMillis());
-                    logger.log(ALL, () -> "pooled " + identity(bytes) + ", size: " + pool.size());
+                    logger.log(TRACE, () -> "pooled " + identity(bytes) + ", size: " + pool.size());
                     if (pool.size() == 1) {
                         ExpiredCacheCleaner.getInstance().register(this);
                     }
@@ -116,13 +116,16 @@ public class BytesPool implements Clearable {
                     if (it.hasNext()) {
                         byte[] bytes = it.next();
                         it.remove();
-                        logger.log(ALL, () -> "clear " + identity(bytes));
+                        logger.log(TRACE, () -> "clear " + identity(bytes));
                     }
                 } else {
                     break;
                 }
             }
-            logger.log(ALL, () -> "pool size: " + oldSize + " -> " + pool.size());
+            int newSize = pool.size();
+            if (oldSize != newSize) {
+                logger.log(INFO, () -> "pool size updated: " + oldSize + " -> " + pool.size());
+            }
             return pool.isEmpty();
         } finally {
             lock.unlock();

@@ -1,19 +1,22 @@
 package org.example.network.tcp;
 
+import org.example.log.Logs;
 import org.example.network.event.EventLoopExecutor;
 import org.example.network.event.SelectionKeyHandler;
 import org.example.network.pipe.PipeHandler;
 import org.example.network.pipe.Pipeline;
 
 import java.io.IOException;
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.net.InetSocketAddress;
-import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
 class TcpConnection implements SelectionKeyHandler {
+    private static final Logger logger = Logs.getLogger(TcpConnection.class);
 
     final Pipeline pipeline;
     final SocketChannel channel;
@@ -54,8 +57,10 @@ class TcpConnection implements SelectionKeyHandler {
             return;
         }
         if (key.isConnectable()) {
-            if (channel.finishConnect()) {
+            if (finishConnect()) {
                 pipeline.connected();
+            } else {
+                return;
             }
         }
         if (key.isWritable()) {
@@ -67,17 +72,18 @@ class TcpConnection implements SelectionKeyHandler {
             int read;
             while ((read = read(buf)) > 0) {
                 if (buf.position() == buf.limit()) {
-                    pipeline.onReceive(buf.flip());
+                    buf.flip();
+                    receive(buf);
                     buf = pipeline.allocate(bufCapacity);
                 }
             }
             if (buf.flip().hasRemaining()) {
-                pipeline.onReceive(buf);
+                receive(buf);
             } else {
                 pipeline.free(buf);
             }
             if (read == -1) {
-                pipeline.onReceive(PipeHandler.END_OF_STREAM);
+                receive(PipeHandler.END_OF_STREAM);
                 if (key.isValid()) {
                     key.interestOps(key.interestOps() & (~SelectionKey.OP_READ));
                 }
@@ -85,14 +91,35 @@ class TcpConnection implements SelectionKeyHandler {
         }
     }
 
-    private int read(ByteBuffer buf) throws IOException {
+    private boolean finishConnect() throws IOException {
+        try {
+            return channel.finishConnect();
+        } catch (IOException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.log(Level.DEBUG, channel + " finishConnect error", e);
+            return false;
+        }
+    }
+
+    private void receive(ByteBuffer buf) throws IOException {
+        pipeline.onReceive(buf);
+    }
+
+    private int read(ByteBuffer buf) {
         try {
             return channel.read(buf);
-        } catch (SocketException e) {
+        } catch (IOException e) {
+            logger.log(Level.DEBUG, () -> "read filed: " + e.getClass().getName() + " : " + e.getLocalizedMessage());
             return -1;
         } catch (Exception e) {
-            pipeline.free(buf);
-            throw e;
+            logger.log(Level.DEBUG, () -> "read filed: " + e.getClass().getName() + " : " + e.getLocalizedMessage());
+            if (!buf.hasRemaining()) {
+                pipeline.free(buf);
+                throw e;
+            } else {
+                return 0;
+            }
         }
     }
 

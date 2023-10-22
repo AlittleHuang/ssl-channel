@@ -1,5 +1,7 @@
 package org.example.network.buf;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.nio.ByteBuffer;
 import java.util.Base64;
 
@@ -15,6 +17,11 @@ public class ByteBufferUtil {
         byte[] bytes = readToArray(buffer);
         buffer.reset();
         return bytes;
+    }
+
+    @NotNull
+    public static String copyAsString(ByteBuffer buf) {
+        return new String(ByteBufferUtil.copyAsArray(buf));
     }
 
     public static byte[] readToArray(ByteBuffer buffer) {

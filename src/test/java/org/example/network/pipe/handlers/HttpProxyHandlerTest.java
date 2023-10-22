@@ -25,7 +25,6 @@ class HttpProxyHandlerTest {
             @Override
             public void init(PipeContext ctx) {
                 ctx.addFirst(new HttpProxyHandler(new InetSocketAddress(1090)));
-                ctx.addFirst(new LoggingHandler());
             }
 
             @Override

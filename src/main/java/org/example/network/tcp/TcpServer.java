@@ -15,11 +15,12 @@ import java.nio.channels.SocketChannel;
 import java.util.Objects;
 
 import static java.lang.System.Logger.Level.DEBUG;
+import static java.lang.System.Logger.Level.INFO;
 
 
 public class TcpServer {
 
-    private static Logger logger = Logs.getLogger(TcpServer.class);
+    private static final Logger logger = Logs.getLogger(TcpServer.class);
 
     private final EventLoopExecutor executor;
     private final ServerSocketChannel channel;
@@ -61,7 +62,7 @@ public class TcpServer {
         });
         InetSocketAddress address = new InetSocketAddress(config.host, config.port);
         channel.bind(address);
-        logger.log(DEBUG, () -> "tpc server bind " + address + " success");
+        logger.log(INFO, () -> "tpc server bind " + address + " success");
     }
 
     public EventLoopExecutor executor() {
