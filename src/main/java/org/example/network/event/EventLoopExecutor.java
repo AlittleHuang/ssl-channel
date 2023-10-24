@@ -10,9 +10,12 @@ import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.time.Duration;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 
 import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.WARNING;
@@ -20,6 +23,8 @@ import static java.lang.System.Logger.Level.WARNING;
 public class EventLoopExecutor implements AutoCloseable {
 
     private static final Logger logger = Logs.getLogger(EventLoopExecutor.class);
+    public static final long WAIT_NANOS = Duration.ofMillis(1).toNanos();
+    public static final long SELECT_TIME_OUT = Duration.ofSeconds(10).toMillis();
 
     private volatile static EventLoopExecutor DEFAULT;
 
@@ -113,7 +118,7 @@ public class EventLoopExecutor implements AutoCloseable {
     private void work() {
         while (getStatus() == STATUS_RUNNING) {
             try {
-                int select = selector.select(this::handlerSelectKey);
+                int select = selector.select(this::handlerSelectKey, SELECT_TIME_OUT);
                 if (select == 0) {
                     emptyLoopCount++;
                     logger.log(DEBUG, "no keys consumed");
@@ -124,6 +129,7 @@ public class EventLoopExecutor implements AutoCloseable {
                     rebuildSelector();
                     emptyLoopCount = 0;
                 }
+                LockSupport.parkNanos(WAIT_NANOS);
             } catch (Exception e) {
                 logger.log(WARNING, () -> "handler select error", e);
             }
@@ -136,14 +142,16 @@ public class EventLoopExecutor implements AutoCloseable {
     }
 
     private void rebuildSelector() throws IOException {
-        logger.log(WARNING, "rebuildSelector");
-        for (SelectionKey key : selector.keys()) {
+        Set<SelectionKey> keys = selector.keys();
+        logger.log(WARNING, "rebuildSelector, key size: " + keys.size());
+        for (SelectionKey key : keys) {
             SelectableChannel channel = key.channel();
             if (channel instanceof SocketChannel) {
                 channel.close();
                 key.cancel();
             }
         }
+        logger.log(WARNING, "rebuild, key size: " + keys.size());
     }
 
     private void handlerSelectKey(SelectionKey key) {
