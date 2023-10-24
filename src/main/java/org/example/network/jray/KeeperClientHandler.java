@@ -129,6 +129,14 @@ public class KeeperClientHandler extends ConnectionKeeper {
                 } catch (IOException e) {
                     ctx.fireError(e);
                 }
+            } else {
+                removeFromQueue();
+                scheduledFuture.cancel(false);
+                try {
+                    context.fireClose();
+                } catch (IOException e) {
+                    ctx.fireError(e);
+                }
             }
         }
     }

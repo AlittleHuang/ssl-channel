@@ -161,6 +161,21 @@ public class PipeNode implements PipeContext {
         }
     }
 
+    @Override
+    public void fireReadeTheEnd() throws IOException {
+        PipeNode node = next;
+        while (node != null && HandlerUtil.isDefault(ON_READ_THE_END, node.handler)) {
+            node = node.next;
+        }
+        if (node != null) {
+            node.onReadTheEnd();
+        }
+    }
+
+    private void onReadTheEnd() throws IOException {
+        handler.onReadTheEnd(this);
+    }
+
     private void onConnect(InetSocketAddress address) throws IOException {
         handler.onConnect(this, address);
     }
@@ -174,6 +189,7 @@ public class PipeNode implements PipeContext {
         handler.onClose(this);
     }
 
+    @Override
     public long getId() {
         return id;
     }

@@ -51,7 +51,7 @@ public class HandlerUtil {
 
         ON_CONNECT(getMethod(() -> PipeHandler.class.getMethod("onConnect", PipeContext.class, InetSocketAddress.class))),
 
-        ;
+        ON_READ_THE_END(getMethod(() -> PipeHandler.class.getMethod("onReadTheEnd", PipeContext.class)));
 
         public final String methodName;
         public final Class<?>[] parameterTypes;

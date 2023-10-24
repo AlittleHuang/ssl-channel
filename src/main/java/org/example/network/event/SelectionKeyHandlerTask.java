@@ -1,7 +1,5 @@
 package org.example.network.event;
 
-import org.example.network.event.SelectionKeyHandlerFunction;
-
 import java.nio.channels.SelectionKey;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -23,7 +21,7 @@ public class SelectionKeyHandlerTask {
         this.target = target;
     }
 
-    public void wakeup(SelectionKey key) {
+    public void handler(SelectionKey key) {
         if (!needTask.getAndSet(true)) {
             execute(key);
         }

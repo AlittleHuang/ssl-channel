@@ -3,7 +3,6 @@ package org.example.network.tcp;
 import org.example.log.Logs;
 import org.example.network.event.EventLoopExecutor;
 import org.example.network.event.SelectionKeyHandler;
-import org.example.network.pipe.PipeHandler;
 import org.example.network.pipe.Pipeline;
 
 import java.io.IOException;
@@ -14,6 +13,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+
+import static java.nio.channels.SelectionKey.OP_CONNECT;
+import static java.nio.channels.SelectionKey.OP_READ;
 
 class TcpConnection implements SelectionKeyHandler {
     private static final Logger logger = Logs.getLogger(TcpConnection.class);
@@ -40,7 +42,7 @@ class TcpConnection implements SelectionKeyHandler {
 
     @Override
     public int registerOps() {
-        return channel.validOps();
+        return isReadable() ? OP_CONNECT | OP_READ : OP_CONNECT;
     }
 
     @Override
@@ -56,17 +58,14 @@ class TcpConnection implements SelectionKeyHandler {
         if (!key.isValid()) {
             return;
         }
-        if (key.isConnectable()) {
-            if (finishConnect()) {
-                pipeline.connected();
-            } else {
+        if (key.isConnectable() && channel.finishConnect()) {
+            pipeline.connected();
+            if (!key.isValid()) {
                 return;
             }
+            key.interestOps(key.interestOps() & (~OP_CONNECT));
         }
-        if (key.isWritable()) {
-            key.interestOps(SelectionKey.OP_READ);
-        }
-        if (key.isReadable() && (pipeline.isAutoRead() || pipeline.isRequiredRead())) {
+        if (key.isReadable() && isReadable()) {
             pipeline.setRequiredRead(false);
             ByteBuffer buf = pipeline.allocate(bufCapacity);
             int read;
@@ -83,23 +82,19 @@ class TcpConnection implements SelectionKeyHandler {
                 pipeline.free(buf);
             }
             if (read == -1) {
-                receive(PipeHandler.END_OF_STREAM);
+                pipeline.onReadeTheEnd();
                 if (key.isValid()) {
                     key.interestOps(key.interestOps() & (~SelectionKey.OP_READ));
                 }
             }
         }
+        if (!isReadable()) {
+            key.interestOps(key.interestOps() & (~SelectionKey.OP_READ));
+        }
     }
 
-    private boolean finishConnect() throws IOException {
-        try {
-            return channel.finishConnect();
-        } catch (IOException e) {
-            throw e;
-        } catch (Exception e) {
-            logger.log(Level.DEBUG, channel + " finishConnect error", e);
-            return false;
-        }
+    private boolean isReadable() {
+        return pipeline.isAutoRead() || pipeline.isRequiredRead();
     }
 
     private void receive(ByteBuffer buf) throws IOException {

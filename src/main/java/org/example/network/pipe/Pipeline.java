@@ -2,16 +2,16 @@ package org.example.network.pipe;
 
 import org.example.log.Logs;
 import org.example.network.buf.ByteBufferAllocator;
-import org.example.network.buf.ByteBufferUtil;
 import org.example.network.buf.PooledAllocator;
 import org.example.network.event.EventLoopExecutor;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.System.Logger;
-import java.lang.System.Logger.Level;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectableChannel;
+import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
 
@@ -43,6 +43,7 @@ public class Pipeline implements ByteBufferAllocator {
     private boolean requiredRead;
 
     private EventLoopExecutor executor;
+
     private boolean closed;
 
 
@@ -88,22 +89,33 @@ public class Pipeline implements ByteBufferAllocator {
         return channel;
     }
 
-    public void read() {
-        if (!autoRead) {
-            requiredRead = true;
-        }
-    }
-
     public boolean isRequiredRead() {
         return requiredRead;
     }
 
     public void setRequiredRead(boolean requiredRead) {
-        this.requiredRead = requiredRead;
+        if (this.requiredRead != requiredRead) {
+            this.requiredRead = requiredRead;
+            updateInterestOps();
+        }
+    }
+
+    private void updateInterestOps() {
+        if (executor != null && channel instanceof SelectableChannel ch) {
+            SelectionKey key = ch.keyFor(executor.getSelector());
+            if (autoRead || requiredRead) {
+                key.interestOps(key.interestOps() | SelectionKey.OP_READ);
+            } else {
+                key.interestOps(key.interestOps() & (~SelectionKey.OP_READ));
+            }
+        }
     }
 
     public void setAutoRead(boolean autoRead) {
-        this.autoRead = autoRead;
+        if (this.autoRead != autoRead) {
+            this.autoRead = autoRead;
+            updateInterestOps();
+        }
     }
 
     public boolean isAutoRead() {
@@ -129,8 +141,10 @@ public class Pipeline implements ByteBufferAllocator {
     }
 
     public void close() throws IOException {
-        this.closed = true;
-        tail.fireClose();
+        if (!this.closed) {
+            this.closed = true;
+            tail.fireClose();
+        }
     }
 
     public void connect(InetSocketAddress address) throws IOException {
@@ -141,9 +155,13 @@ public class Pipeline implements ByteBufferAllocator {
         return closed || !channel.isOpen();
     }
 
+    public void onReadeTheEnd() throws IOException {
+        head.fireReadeTheEnd();
+    }
+
     static class HeadHandler implements PipeHandler {
         @Override
-        public void onWrite(PipeContext ctx, ByteBuffer buf) throws IOException {
+        public void onWrite(PipeContext ctx, ByteBuffer buf) {
             try {
                 while (buf.hasRemaining()) {
                     ctx.pipeline().channel.write(buf);
@@ -156,11 +174,12 @@ public class Pipeline implements ByteBufferAllocator {
         }
 
         @Override
-        public void onClose(PipeContext ctx) throws IOException {
-            try {
-                ctx.pipeline().channel.close();
-            } catch (IOException e) {
-                logger.log(WARNING, () -> ctx.pipeline().getChannel() + " close error: " + e.getClass().getName() + " : " + e.getLocalizedMessage());
+        public void onClose(PipeContext ctx) {
+            WritableByteChannel ch = ctx.pipeline().getChannel();
+            try (ch) {
+                logger.log(DEBUG, () -> ch + " close");
+            } catch (Exception e) {
+                logger.log(WARNING, () -> ch + " close error: " + e.getClass().getName() + " : " + e.getLocalizedMessage());
             }
         }
 
@@ -197,10 +216,12 @@ public class Pipeline implements ByteBufferAllocator {
             if (buf.hasRemaining()) {
                 logger.log(WARNING, () -> "Buffer has " + buf.remaining() + "remaining reached end of pipeline");
             }
-            if (buf == END_OF_STREAM) {
-                ctx.pipeline().close();
-            }
             ctx.free(buf);
+        }
+
+        @Override
+        public void onReadTheEnd(PipeContext ctx) throws IOException {
+            ctx.pipeline().close();
         }
 
         @Override

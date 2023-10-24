@@ -1,6 +1,7 @@
 package org.example.network.event;
 
 import org.example.log.Logs;
+import org.example.network.buf.Bytes;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -8,7 +9,7 @@ import java.lang.System.Logger;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.util.Iterator;
+import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,6 +31,8 @@ public class EventLoopExecutor implements AutoCloseable {
     private final Selector selector;
     private final AtomicInteger status = new AtomicInteger();
     private final Thread thread = getWorkThread();
+
+    private int emptyLoopCount;
 
     @NotNull
     private Thread getWorkThread() {
@@ -110,7 +113,17 @@ public class EventLoopExecutor implements AutoCloseable {
     private void work() {
         while (getStatus() == STATUS_RUNNING) {
             try {
-                doWork();
+                int select = selector.select(this::handlerSelectKey);
+                if (select == 0) {
+                    emptyLoopCount++;
+                    logger.log(DEBUG, "no keys consumed");
+                } else {
+                    emptyLoopCount = 0;
+                }
+                if (emptyLoopCount >= Bytes.M) {
+                    rebuildSelector();
+                    emptyLoopCount = 0;
+                }
             } catch (Exception e) {
                 logger.log(WARNING, () -> "handler select error", e);
             }
@@ -122,25 +135,35 @@ public class EventLoopExecutor implements AutoCloseable {
         }
     }
 
-    private void doWork() throws IOException {
-        if (getStatus() == STATUS_RUNNING) {
-            selector.select(10);
-        }
-        Iterator<SelectionKey> it = selector.selectedKeys().iterator();
-        while (it.hasNext()) {
-            SelectionKey key = it.next();
-            it.remove();
-            if (!key.isValid()) {
-                continue;
+    private void rebuildSelector() throws IOException {
+        logger.log(WARNING, "rebuildSelector");
+        for (SelectionKey key : selector.keys()) {
+            SelectableChannel channel = key.channel();
+            if (channel instanceof SocketChannel) {
+                channel.close();
+                key.cancel();
             }
+        }
+    }
+
+    private void handlerSelectKey(SelectionKey key) {
+        SelectableChannel channel = key.channel();
+        try {
             if (key.attachment() instanceof SelectionKeyHandlerTask task) {
-                task.wakeup(key);
+                task.handler(key);
             } else {
                 logger.log(WARNING, () -> key + " miss handler");
-                key.channel().close();
+                channel.close();
+                key.cancel();
             }
             if (getStatus() == STATUS_CLOSE) {
                 key.cancel();
+            }
+        } catch (Exception e) {
+            try (channel) {
+                logger.log(WARNING, channel + " handler select key error", e);
+            } catch (Exception exception) {
+                logger.log(WARNING, channel + " close error", e);
             }
         }
     }

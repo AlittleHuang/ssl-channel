@@ -54,5 +54,9 @@ public interface PipeContext {
     void fireError(Throwable throwable);
 
     void fireConnect(InetSocketAddress address) throws IOException;
+
+    void fireReadeTheEnd() throws IOException;
+
+    long getId();
 }
 

@@ -6,7 +6,7 @@ import java.nio.ByteBuffer;
 
 public interface PipeHandler {
 
-    ByteBuffer END_OF_STREAM = ByteBuffer.wrap(new byte[0]).asReadOnlyBuffer();
+    // ByteBuffer END_OF_STREAM = ByteBuffer.wrap(new byte[0]).asReadOnlyBuffer();
 
     default void init(PipeContext ctx) {
     }
@@ -35,4 +35,7 @@ public interface PipeHandler {
         ctx.fireConnect(address);
     }
 
+    default void onReadTheEnd(PipeContext ctx) throws IOException {
+        ctx.fireReadeTheEnd();
+    }
 }

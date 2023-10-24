@@ -35,6 +35,7 @@ public class AuthServerHandler implements PipeHandler {
                     logger.log(Level.WARNING, "auth field");
                     ctx.fireWrite(ByteBuffer.wrap("HTTP/1.1 403 FORBIDDEN\r\n\r\n".getBytes()));
                     ctx.fireClose();
+                    ctx.free(buf);
                     return;
                 }
             }
@@ -42,13 +43,15 @@ public class AuthServerHandler implements PipeHandler {
                 ctx.fireConnected();
                 if (buf.hasRemaining()) {
                     ctx.fireReceive(buf);
+                } else {
+                    ctx.free(buf);
                 }
                 ctx.remove();
             }
         }
 
         @Override
-        public void onConnect(PipeContext ctx, InetSocketAddress address) throws IOException {
+        public void onConnect(PipeContext ctx, InetSocketAddress address) {
 
         }
     }

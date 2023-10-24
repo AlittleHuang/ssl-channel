@@ -30,8 +30,11 @@ public class RelayHandler implements PipeHandler {
             @Override
             public void onReceive(PipeContext ctx, ByteBuffer buf) throws IOException {
                 if (local.isClosed()) {
-                    ctx.fireClose();
-                    ctx.free(buf);
+                    try {
+                        ctx.fireClose();
+                    } finally {
+                        ctx.free(buf);
+                    }
                 } else {
                     local.write(buf);
                 }

@@ -13,6 +13,8 @@ import static java.lang.System.Logger.Level.*;
 
 public class BytesPool implements Clearable {
 
+    public static boolean debug;
+
 
     public static final Logger logger = Logs.getLogger(BytesPool.class);
     private final int length;
@@ -23,6 +25,9 @@ public class BytesPool implements Clearable {
     private int maxPoolSize = Bytes.K;
     private long expiration = Duration.ofMinutes(1).toMillis();
 
+    private final Set<DebugKey> required = new HashSet<>();
+
+
     public BytesPool(int length) {
         this.length = length;
     }
@@ -30,16 +35,24 @@ public class BytesPool implements Clearable {
     public byte[] required() {
         lock.lock();
         try {
-            Iterator<byte[]> it = pool.iterator();
-            if (it.hasNext()) {
-                byte[] next = it.next();
-                it.remove();
-                times.removeLast();
-                logger.log(TRACE, () -> "get: " + identity(next) + ", pool size: " + pool.size());
-                return next;
+            byte[] bytes = doRequired();
+            if (debug) {
+                required.add(new DebugKey(bytes));
             }
+            return bytes;
         } finally {
             lock.unlock();
+        }
+    }
+
+    private byte[] doRequired() {
+        Iterator<byte[]> it = pool.iterator();
+        if (it.hasNext()) {
+            byte[] next = it.next();
+            it.remove();
+            times.removeLast();
+            logger.log(TRACE, () -> "get: " + identity(next) + ", pool size: " + pool.size());
+            return next;
         }
         byte[] bytes = new byte[length];
         logger.log(INFO, () -> "new " + identity(bytes));
@@ -56,6 +69,9 @@ public class BytesPool implements Clearable {
         }
         lock.lock();
         try {
+            if (debug) {
+                required.remove(new DebugKey(bytes));
+            }
             if (pool.size() < maxPoolSize) {
                 if (pool.add(bytes)) {
                     times.addLast(System.currentTimeMillis());
@@ -106,6 +122,10 @@ public class BytesPool implements Clearable {
     public boolean clear() {
         lock.lock();
         try {
+            if (debug) {
+                logRequiredInfo();
+            }
+
             int oldSize = pool.size();
             long earliest = System.currentTimeMillis() - expiration;
             Iterator<byte[]> it = pool.iterator();
@@ -129,6 +149,39 @@ public class BytesPool implements Clearable {
             return pool.isEmpty();
         } finally {
             lock.unlock();
+        }
+    }
+
+    private void logRequiredInfo() {
+        Iterator<DebugKey> it = required.iterator();
+        long time = System.currentTimeMillis() - Duration.ofSeconds(30).toMillis();
+        while (it.hasNext()) {
+            DebugKey next = it.next();
+            if (next.time < time) {
+                logger.log(WARNING, () -> "not recycled within 30 seconds", next.exception);
+                it.remove();
+            }
+        }
+    }
+
+    private static final class DebugKey {
+        private final long time = System.currentTimeMillis();
+        private final Exception exception = new Exception();
+        private final byte[] bytes;
+
+        private DebugKey(byte[] bytes) {
+            this.bytes = Objects.requireNonNull(bytes);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            return o instanceof DebugKey k && k.bytes == bytes;
+        }
+
+        @Override
+        public int hashCode() {
+            return System.identityHashCode(bytes);
         }
     }
 }

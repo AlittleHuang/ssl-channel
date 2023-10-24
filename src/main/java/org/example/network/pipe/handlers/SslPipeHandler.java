@@ -191,9 +191,6 @@ public class SslPipeHandler implements PipeHandler {
                 engine.closeOutbound();
             }
             logger.log(TRACE, () -> ctx.pipeline().getChannel() + "wrap: " + SslPipeHandler.toString(result));
-            // if (result.getHandshakeStatus() == FINISHED) {
-            //     handshakeFinished(ctx);
-            // }
             ctx.free(wrap_src);
             return result;
         }

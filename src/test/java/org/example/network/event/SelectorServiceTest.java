@@ -36,9 +36,6 @@ public class SelectorServiceTest {
             public void onReceive(PipeContext ctx, ByteBuffer buf) throws IOException {
                 System.out.println(ByteBufferUtil.readToString(buf));
                 ctx.fireReceive(buf);
-                if (buf == END_OF_STREAM) {
-                    ctx.fireClose();
-                }
             }
         };
 

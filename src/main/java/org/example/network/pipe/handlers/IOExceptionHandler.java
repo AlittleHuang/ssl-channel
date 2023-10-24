@@ -16,6 +16,7 @@ public class IOExceptionHandler implements PipeHandler {
     @Override
     public void onError(PipeContext ctx, Throwable throwable) {
         if (throwable instanceof IOException) {
+            logger.log(Level.DEBUG, () -> "error: " + throwable.getClass().getName() + " : " + throwable.getLocalizedMessage(), throwable);
             try {
                 ctx.fireClose();
             } catch (IOException e) {
