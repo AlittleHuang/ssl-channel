@@ -5,8 +5,8 @@ import org.example.network.buf.Bytes;
 import org.example.network.pipe.PipeContext;
 import org.example.network.pipe.PipeHandler;
 import org.example.network.pipe.Pipeline;
-import org.example.network.tcp.TcpClient;
-import org.example.network.tcp.TcpClient.Config;
+import org.example.network.tcp.nio.NioTcpClient;
+import org.example.network.tcp.nio.NioTcpClient.Config;
 
 import java.io.IOException;
 import java.lang.System.Logger;
@@ -50,7 +50,7 @@ public class HttpProxyServerHandler implements PipeHandler {
             logger.log(TRACE, () -> "request header: " + new String(request));
             ProxyRequest pr = resoleRequestData();
             Config config = new Config();
-            config.executor = ctx.executor();
+            // config.executor = ctx.executor();
             config.host = pr.host();
             config.port = pr.port();
             logger.log(INFO, "ACCEPT " + pr.method() + " " + config.host + ":" + config.port);
@@ -93,7 +93,7 @@ public class HttpProxyServerHandler implements PipeHandler {
                     ctx.fireError(throwable);
                 }
             };
-            TcpClient client = TcpClient.open(config);
+            NioTcpClient client = NioTcpClient.open(config);
             remote = client.pipeline();
             connectionEstablished = true;
         }

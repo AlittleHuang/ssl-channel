@@ -180,10 +180,6 @@ public class PipeNode implements PipeContext {
         handler.onConnect(this, address);
     }
 
-    @Override
-    public NioEventLoopExecutor executor() {
-        return pipeline.executor();
-    }
 
     private void onClose() throws IOException {
         handler.onClose(this);

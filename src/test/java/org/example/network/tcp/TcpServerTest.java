@@ -3,7 +3,8 @@ package org.example.network.tcp;
 import org.example.network.buf.ByteBufferUtil;
 import org.example.network.pipe.PipeContext;
 import org.example.network.pipe.PipeHandler;
-import org.example.network.tcp.TcpServer.Config;
+import org.example.network.tcp.nio.NioTcpServer;
+import org.example.network.tcp.nio.NioTcpServer.Config;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -19,7 +20,7 @@ class TcpServerTest {
                 System.out.println(ByteBufferUtil.readToString(buf));
             }
         };
-        TcpServer.open(config);
+        NioTcpServer.open(config);
     }
 
 }

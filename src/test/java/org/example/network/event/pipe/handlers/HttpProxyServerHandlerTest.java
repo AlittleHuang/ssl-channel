@@ -3,9 +3,8 @@ package org.example.network.event.pipe.handlers;
 import org.example.network.pipe.PipeContext;
 import org.example.network.pipe.PipeHandler;
 import org.example.network.pipe.handlers.HttpProxyServerHandler;
-import org.example.network.pipe.handlers.HttpProxyServerInitializer;
-import org.example.network.tcp.TcpServer;
-import org.example.network.tcp.TcpServer.Config;
+import org.example.network.tcp.nio.NioTcpServer;
+import org.example.network.tcp.nio.NioTcpServer.Config;
 
 import java.io.IOException;
 
@@ -20,7 +19,7 @@ class HttpProxyServerHandlerTest {
                 ctx.replace(new HttpProxyServerHandler());
             }
         };
-        TcpServer.open(config);
+        NioTcpServer.open(config);
     }
 
 }

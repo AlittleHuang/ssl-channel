@@ -1,8 +1,8 @@
 package org.example.network.event;
 
 
-import org.example.network.tcp.TcpClient;
-import org.example.network.tcp.TcpClient.Config;
+import org.example.network.tcp.nio.NioTcpClient;
+import org.example.network.tcp.nio.NioTcpClient.Config;
 import org.example.network.buf.ByteBufferUtil;
 import org.example.network.pipe.PipeContext;
 import org.example.network.pipe.PipeHandler;
@@ -40,9 +40,8 @@ public class SelectorServiceTest {
         };
 
 
-        TcpClient client = new TcpClient(config);
+        NioTcpClient client = new NioTcpClient(config);
         Thread.sleep(100);
-        client.pipeline().executor().close();
 
 
     }

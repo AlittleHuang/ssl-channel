@@ -5,8 +5,8 @@ import org.example.network.event.NioEventLoopExecutor;
 import org.example.network.pipe.PipeContext;
 import org.example.network.pipe.PipeHandler;
 import org.example.network.pipe.handlers.SslPipeHandler;
-import org.example.network.tcp.TcpClient;
-import org.example.network.tcp.TcpClient.Config;
+import org.example.network.tcp.nio.NioTcpClient;
+import org.example.network.tcp.nio.NioTcpClient.Config;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
@@ -55,7 +55,7 @@ class SslHandlerTest {
         };
 
 
-        TcpClient client = new TcpClient(config);
+        NioTcpClient client = new NioTcpClient(config);
         Thread.sleep(5000);
         client.executor().close();
     }

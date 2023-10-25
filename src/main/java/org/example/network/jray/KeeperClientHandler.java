@@ -112,6 +112,9 @@ public class KeeperClientHandler extends ConnectionKeeper {
         if (deque != null) {
             deque.remove(this);
         }
+        if (!scheduledFuture.isDone()) {
+            scheduledFuture.cancel(false);
+        }
     }
 
     private void keepConnect() {
@@ -131,7 +134,6 @@ public class KeeperClientHandler extends ConnectionKeeper {
                 }
             } else {
                 removeFromQueue();
-                scheduledFuture.cancel(false);
                 try {
                     context.fireClose();
                 } catch (IOException e) {

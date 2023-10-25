@@ -4,8 +4,8 @@ import org.example.network.buf.ByteBufferUtil;
 import org.example.network.event.NioEventLoopExecutor;
 import org.example.network.pipe.PipeContext;
 import org.example.network.pipe.PipeHandler;
-import org.example.network.tcp.TcpClient;
-import org.example.network.tcp.TcpClient.Config;
+import org.example.network.tcp.nio.NioTcpClient;
+import org.example.network.tcp.nio.NioTcpClient.Config;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -46,7 +46,7 @@ class HttpProxyHandlerTest {
         };
 
 
-        TcpClient client = new TcpClient(config);
+        NioTcpClient client = new NioTcpClient(config);
         Thread.sleep(5000);
         client.executor().close();
     }

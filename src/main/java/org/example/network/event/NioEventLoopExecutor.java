@@ -176,10 +176,6 @@ public class NioEventLoopExecutor implements AutoCloseable {
         }
     }
 
-    public Selector getSelector() {
-        return selector;
-    }
-
     @Override
     public void close() {
         if (DEFAULT == this) {
@@ -190,6 +186,10 @@ public class NioEventLoopExecutor implements AutoCloseable {
         } else {
             logger.log(WARNING, () -> "error status " + getStatus());
         }
+    }
+
+    public SelectionKey key(SelectableChannel ch) {
+        return ch.keyFor(selector);
     }
 
 }

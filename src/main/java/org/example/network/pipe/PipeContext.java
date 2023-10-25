@@ -1,7 +1,5 @@
 package org.example.network.pipe;
 
-import org.example.network.event.NioEventLoopExecutor;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -24,21 +22,12 @@ public interface PipeContext {
 
 
     default ByteBuffer allocate(int capacity) {
-        // noinspection resource
-        NioEventLoopExecutor executor = executor();
-        if (executor == null) {
-            return ByteBuffer.allocate(capacity);
-        }
         return pipeline().allocate(capacity);
     }
 
 
     default void free(ByteBuffer buf) {
-        // noinspection resource
-        NioEventLoopExecutor executor = executor();
-        if (executor != null) {
-            pipeline().free(buf);
-        }
+        pipeline().free(buf);
     }
 
     void fireConnected() throws IOException;
@@ -46,8 +35,6 @@ public interface PipeContext {
     void remove();
 
     void fireClose() throws IOException;
-
-    NioEventLoopExecutor executor();
 
     void replace(PipeHandler handler);
 

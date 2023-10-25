@@ -1,4 +1,4 @@
-package org.example.network.tcp;
+package org.example.network.tcp.nio;
 
 import org.example.log.Logs;
 import org.example.network.event.NioEventLoopExecutor;
@@ -32,7 +32,13 @@ class TcpConnection implements SelectionKeyHandler {
 
     @Override
     public void init(NioEventLoopExecutor executor) {
-        pipeline.executor(executor);
+        pipeline.listener(pipeline -> {
+            SelectableChannel ch = (SelectableChannel) pipeline.getChannel();
+            SelectionKey key = executor.key(ch);
+            if (key != null && key.isValid()) {
+                key.interestOps(key.interestOps() | OP_READ);
+            }
+        });
     }
 
     @Override

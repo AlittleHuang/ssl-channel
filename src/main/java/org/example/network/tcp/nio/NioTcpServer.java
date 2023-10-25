@@ -1,4 +1,4 @@
-package org.example.network.tcp;
+package org.example.network.tcp.nio;
 
 import org.example.log.Logs;
 import org.example.network.buf.Bytes;
@@ -18,16 +18,16 @@ import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.INFO;
 
 
-public class TcpServer {
+public class NioTcpServer {
 
-    private static final Logger logger = Logs.getLogger(TcpServer.class);
+    private static final Logger logger = Logs.getLogger(NioTcpServer.class);
 
     private final NioEventLoopExecutor executor;
     private final ServerSocketChannel channel;
     private final int bufCapacity;
 
 
-    public TcpServer(Config config) throws IOException {
+    public NioTcpServer(Config config) throws IOException {
         Objects.requireNonNull(config, "config");
         Objects.requireNonNull(config.handler, "config.handler");
         Objects.requireNonNull(config.host, "config.host");
@@ -77,8 +77,8 @@ public class TcpServer {
         return bufCapacity;
     }
 
-    public static TcpServer open(Config config) throws IOException {
-        return new TcpServer(config);
+    public static NioTcpServer open(Config config) throws IOException {
+        return new NioTcpServer(config);
     }
 
 

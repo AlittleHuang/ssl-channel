@@ -23,7 +23,7 @@ public class BytesPool implements Clearable {
     private final Lock lock = new ReentrantLock();
 
     private int maxPoolSize = Bytes.K;
-    private long expiration = Duration.ofMinutes(1).toMillis();
+    private long expiration = Duration.ofMinutes(5).toMillis();
 
     private final Set<DebugKey> required = new HashSet<>();
 

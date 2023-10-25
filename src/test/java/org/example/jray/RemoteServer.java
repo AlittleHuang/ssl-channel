@@ -2,10 +2,9 @@ package org.example.jray;
 
 import org.example.network.pipe.PipeContext;
 import org.example.network.pipe.PipeHandler;
-import org.example.network.pipe.handlers.AuthHandlers;
 import org.example.network.pipe.handlers.HttpProxyServerInitializer;
-import org.example.network.tcp.TcpServer;
-import org.example.network.tcp.TcpServer.Config;
+import org.example.network.tcp.nio.NioTcpServer;
+import org.example.network.tcp.nio.NioTcpServer.Config;
 
 import java.io.IOException;
 
@@ -21,7 +20,7 @@ public class RemoteServer {
                 ctx.addBefore(new HttpProxyServerInitializer());
             }
         };
-        TcpServer.open(config);
+        NioTcpServer.open(config);
     }
 
 }

@@ -1,4 +1,4 @@
-package org.example.network.tcp;
+package org.example.network.tcp.nio;
 
 import org.example.network.buf.Bytes;
 import org.example.network.event.NioEventLoopExecutor;
@@ -11,13 +11,13 @@ import java.nio.channels.SocketChannel;
 import java.util.Objects;
 
 
-public class TcpClient {
+public class NioTcpClient {
 
     private final NioEventLoopExecutor executor;
     private final TcpConnection connection;
 
 
-    public TcpClient(Config config) throws IOException {
+    public NioTcpClient(Config config) throws IOException {
         Objects.requireNonNull(config, "config");
         Objects.requireNonNull(config.handler, "config.handler");
         Objects.requireNonNull(config.host, "config.host");
@@ -57,8 +57,8 @@ public class TcpClient {
         return connection.bufCapacity;
     }
 
-    public static TcpClient open(Config config) throws IOException {
-        return new TcpClient(config);
+    public static NioTcpClient open(Config config) throws IOException {
+        return new NioTcpClient(config);
     }
 
 

@@ -5,7 +5,7 @@ import org.example.network.pipe.PipeContext;
 import org.example.network.pipe.PipeHandler;
 import org.example.network.pipe.Pipeline;
 import org.example.network.pipe.handlers.SslPipeHandler;
-import org.example.network.tcp.TcpClient;
+import org.example.network.tcp.nio.NioTcpClient;
 
 import javax.net.ssl.SSLContext;
 import java.lang.System.Logger;
@@ -38,7 +38,7 @@ public class ClientConnectionPool {
     private void preConnect(InetSocketAddress remote) throws Exception {
         KeeperClientHandler handler = new KeeperClientHandler(queue);
         queue.put(handler);
-        TcpClient.Config config = new TcpClient.Config();
+        NioTcpClient.Config config = new NioTcpClient.Config();
         config.host = remote.getHostName();
         config.port = remote.getPort();
         config.handler = new PipeHandler() {
@@ -47,13 +47,13 @@ public class ClientConnectionPool {
                 try {
                     ctx.addFirst(new SslPipeHandler(SSLContext.getDefault(), true));
                     ctx.addLast(handler);
-                } catch (NoSuchAlgorithmException e) {
+                } catch (Exception e) {
                     ctx.fireError(e);
                 }
                 ctx.remove();
             }
         };
-        TcpClient.open(config);
+        NioTcpClient.open(config);
     }
 
     public CompletableFuture<Pipeline> get() throws InterruptedException {

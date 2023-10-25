@@ -3,15 +3,13 @@ package org.example.network.pipe;
 import org.example.log.Logs;
 import org.example.network.buf.ByteBufferAllocator;
 import org.example.network.buf.PooledAllocator;
-import org.example.network.event.NioEventLoopExecutor;
+import org.example.network.event.PipelineReadableListener;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.System.Logger;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectableChannel;
-import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
 
@@ -42,7 +40,7 @@ public class Pipeline implements ByteBufferAllocator {
 
     private boolean requiredRead;
 
-    private NioEventLoopExecutor executor;
+    private PipelineReadableListener listener;
 
     private boolean closed;
 
@@ -95,26 +93,27 @@ public class Pipeline implements ByteBufferAllocator {
 
     public void setRequiredRead(boolean requiredRead) {
         if (this.requiredRead != requiredRead) {
+            boolean readable = readable();
             this.requiredRead = requiredRead;
-            updateInterestOps();
+            updateInterestOps(readable);
         }
     }
 
-    private void updateInterestOps() {
-        if (executor != null && channel instanceof SelectableChannel ch) {
-            SelectionKey key = ch.keyFor(executor.getSelector());
-            if (autoRead || requiredRead) {
-                key.interestOps(key.interestOps() | SelectionKey.OP_READ);
-            } else {
-                key.interestOps(key.interestOps() & (~SelectionKey.OP_READ));
-            }
+    private void updateInterestOps(boolean originReadable) {
+        if (!originReadable && readable()) {
+            listener.isReadable(this);
         }
+    }
+
+    public boolean readable() {
+        return autoRead || requiredRead;
     }
 
     public void setAutoRead(boolean autoRead) {
         if (this.autoRead != autoRead) {
+            boolean readable = readable();
             this.autoRead = autoRead;
-            updateInterestOps();
+            updateInterestOps(readable);
         }
     }
 
@@ -122,12 +121,8 @@ public class Pipeline implements ByteBufferAllocator {
         return autoRead;
     }
 
-    public void executor(NioEventLoopExecutor executor) {
-        this.executor = executor;
-    }
-
-    public NioEventLoopExecutor executor() {
-        return executor;
+    public void listener(PipelineReadableListener listener) {
+        this.listener = listener;
     }
 
     @Override
@@ -214,7 +209,7 @@ public class Pipeline implements ByteBufferAllocator {
         @Override
         public void onReceive(PipeContext ctx, ByteBuffer buf) throws IOException {
             if (buf.hasRemaining()) {
-                logger.log(WARNING, () -> "Buffer has " + buf.remaining() + "remaining reached end of pipeline");
+                logger.log(WARNING, () -> "Buffer has " + buf.remaining() + " remaining reached end of pipeline");
             }
             ctx.free(buf);
         }
