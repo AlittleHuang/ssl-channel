@@ -5,7 +5,7 @@ import java.nio.channels.SelectableChannel;
 
 public interface SelectionKeyHandler extends SelectionKeyHandlerFunction {
 
-    default void init(EventLoopExecutor executor) throws IOException {
+    default void init(NioEventLoopExecutor executor) throws IOException {
 
     }
 

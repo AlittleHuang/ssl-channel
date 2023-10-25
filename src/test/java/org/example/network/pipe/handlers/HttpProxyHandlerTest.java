@@ -1,7 +1,7 @@
 package org.example.network.pipe.handlers;
 
 import org.example.network.buf.ByteBufferUtil;
-import org.example.network.event.EventLoopExecutor;
+import org.example.network.event.NioEventLoopExecutor;
 import org.example.network.pipe.PipeContext;
 import org.example.network.pipe.PipeHandler;
 import org.example.network.tcp.TcpClient;
@@ -19,7 +19,7 @@ class HttpProxyHandlerTest {
 
         config.host = "www.baidu.com";
         config.port = 80;
-        config.executor = EventLoopExecutor.open(Selector.open());
+        config.executor = NioEventLoopExecutor.open(Selector.open());
         config.handler = new PipeHandler() {
 
             @Override

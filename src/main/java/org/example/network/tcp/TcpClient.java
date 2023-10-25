@@ -1,7 +1,7 @@
 package org.example.network.tcp;
 
 import org.example.network.buf.Bytes;
-import org.example.network.event.EventLoopExecutor;
+import org.example.network.event.NioEventLoopExecutor;
 import org.example.network.pipe.PipeHandler;
 import org.example.network.pipe.Pipeline;
 
@@ -13,7 +13,7 @@ import java.util.Objects;
 
 public class TcpClient {
 
-    private final EventLoopExecutor executor;
+    private final NioEventLoopExecutor executor;
     private final TcpConnection connection;
 
 
@@ -22,9 +22,9 @@ public class TcpClient {
         Objects.requireNonNull(config.handler, "config.handler");
         Objects.requireNonNull(config.host, "config.host");
         executor = config.executor == null
-                ? EventLoopExecutor.getDefault()
+                ? NioEventLoopExecutor.getDefault()
                 : config.executor;
-        if (executor.getStatus() == EventLoopExecutor.STATUS_READY) {
+        if (executor.getStatus() == NioEventLoopExecutor.STATUS_READY) {
             executor.start();
         }
         SocketChannel channel = SocketChannel.open();
@@ -41,7 +41,7 @@ public class TcpClient {
         executor.register(connection);
     }
 
-    public EventLoopExecutor executor() {
+    public NioEventLoopExecutor executor() {
         return executor;
     }
 
@@ -64,7 +64,7 @@ public class TcpClient {
 
     public static class Config {
 
-        public EventLoopExecutor executor;
+        public NioEventLoopExecutor executor;
 
         public String host;
 

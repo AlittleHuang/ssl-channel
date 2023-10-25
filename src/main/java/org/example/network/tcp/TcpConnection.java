@@ -1,7 +1,7 @@
 package org.example.network.tcp;
 
 import org.example.log.Logs;
-import org.example.network.event.EventLoopExecutor;
+import org.example.network.event.NioEventLoopExecutor;
 import org.example.network.event.SelectionKeyHandler;
 import org.example.network.pipe.Pipeline;
 
@@ -31,7 +31,7 @@ class TcpConnection implements SelectionKeyHandler {
     }
 
     @Override
-    public void init(EventLoopExecutor executor) {
+    public void init(NioEventLoopExecutor executor) {
         pipeline.executor(executor);
     }
 

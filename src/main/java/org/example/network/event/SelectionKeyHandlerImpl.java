@@ -8,7 +8,7 @@ import java.util.function.Consumer;
 public class SelectionKeyHandlerImpl implements SelectionKeyHandler {
 
     private final SelectionKeyHandlerFunction handler;
-    private final Consumer<EventLoopExecutor> initializer;
+    private final Consumer<NioEventLoopExecutor> initializer;
     private final SelectableChannel channel;
     private final int registerOps;
 
@@ -22,7 +22,7 @@ public class SelectionKeyHandlerImpl implements SelectionKeyHandler {
     }
 
     public SelectionKeyHandlerImpl(SelectionKeyHandlerFunction handler,
-                                   Consumer<EventLoopExecutor> initializer,
+                                   Consumer<NioEventLoopExecutor> initializer,
                                    SelectableChannel channel,
                                    int registerOps) {
         this.handler = handler;
@@ -37,7 +37,7 @@ public class SelectionKeyHandlerImpl implements SelectionKeyHandler {
     }
 
     @Override
-    public void init(EventLoopExecutor executor) {
+    public void init(NioEventLoopExecutor executor) {
         if (initializer != null) {
             initializer.accept(executor);
         }

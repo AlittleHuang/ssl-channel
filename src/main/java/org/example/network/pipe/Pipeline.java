@@ -3,7 +3,7 @@ package org.example.network.pipe;
 import org.example.log.Logs;
 import org.example.network.buf.ByteBufferAllocator;
 import org.example.network.buf.PooledAllocator;
-import org.example.network.event.EventLoopExecutor;
+import org.example.network.event.NioEventLoopExecutor;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -42,7 +42,7 @@ public class Pipeline implements ByteBufferAllocator {
 
     private boolean requiredRead;
 
-    private EventLoopExecutor executor;
+    private NioEventLoopExecutor executor;
 
     private boolean closed;
 
@@ -122,11 +122,11 @@ public class Pipeline implements ByteBufferAllocator {
         return autoRead;
     }
 
-    public void executor(EventLoopExecutor executor) {
+    public void executor(NioEventLoopExecutor executor) {
         this.executor = executor;
     }
 
-    public EventLoopExecutor executor() {
+    public NioEventLoopExecutor executor() {
         return executor;
     }
 

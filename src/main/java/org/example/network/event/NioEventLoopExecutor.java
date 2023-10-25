@@ -20,13 +20,13 @@ import java.util.concurrent.locks.LockSupport;
 import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.WARNING;
 
-public class EventLoopExecutor implements AutoCloseable {
+public class NioEventLoopExecutor implements AutoCloseable {
 
-    private static final Logger logger = Logs.getLogger(EventLoopExecutor.class);
+    private static final Logger logger = Logs.getLogger(NioEventLoopExecutor.class);
     public static final long WAIT_NANOS = Duration.ofMillis(1).toNanos();
     public static final long SELECT_TIME_OUT = Duration.ofSeconds(10).toMillis();
 
-    private volatile static EventLoopExecutor DEFAULT;
+    private volatile static NioEventLoopExecutor DEFAULT;
 
 
     public static int STATUS_READY = 0;
@@ -48,15 +48,15 @@ public class EventLoopExecutor implements AutoCloseable {
 
     private final ExecutorService executorService;
 
-    private EventLoopExecutor(Selector selector, ExecutorService executor) {
+    private NioEventLoopExecutor(Selector selector, ExecutorService executor) {
         this.selector = selector;
         this.executorService = executor;
     }
 
 
-    public static EventLoopExecutor getDefault() throws IOException {
+    public static NioEventLoopExecutor getDefault() throws IOException {
         if (DEFAULT == null) {
-            synchronized (EventLoopExecutor.class) {
+            synchronized (NioEventLoopExecutor.class) {
                 if (DEFAULT == null) {
                     DEFAULT = open();
                 }
@@ -65,13 +65,13 @@ public class EventLoopExecutor implements AutoCloseable {
         return DEFAULT;
     }
 
-    private static EventLoopExecutor open() throws IOException {
+    private static NioEventLoopExecutor open() throws IOException {
         return open(Selector.open());
     }
 
-    public static EventLoopExecutor open(Selector selector) {
+    public static NioEventLoopExecutor open(Selector selector) {
         ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
-        return new EventLoopExecutor(selector, executor).start();
+        return new NioEventLoopExecutor(selector, executor).start();
     }
 
     public void register(SelectionKeyHandler handler) throws IOException {
@@ -106,7 +106,7 @@ public class EventLoopExecutor implements AutoCloseable {
         return status.intValue();
     }
 
-    public EventLoopExecutor start() {
+    public NioEventLoopExecutor start() {
         if (status.compareAndSet(STATUS_READY, STATUS_RUNNING)) {
             thread.start();
         } else {
@@ -121,6 +121,7 @@ public class EventLoopExecutor implements AutoCloseable {
                 int select = selector.select(this::handlerSelectKey, SELECT_TIME_OUT);
                 if (select == 0) {
                     emptyLoopCount++;
+                    LockSupport.parkNanos(WAIT_NANOS);
                     logger.log(DEBUG, "no keys consumed");
                 } else {
                     emptyLoopCount = 0;
@@ -129,7 +130,6 @@ public class EventLoopExecutor implements AutoCloseable {
                     rebuildSelector();
                     emptyLoopCount = 0;
                 }
-                LockSupport.parkNanos(WAIT_NANOS);
             } catch (Exception e) {
                 logger.log(WARNING, () -> "handler select error", e);
             }

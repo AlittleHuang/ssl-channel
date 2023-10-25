@@ -1,7 +1,7 @@
 package org.example.network.pipe;
 
 
-import org.example.network.event.EventLoopExecutor;
+import org.example.network.event.NioEventLoopExecutor;
 import org.example.network.pipe.handlers.HandlerUtil;
 
 import java.io.IOException;
@@ -181,7 +181,7 @@ public class PipeNode implements PipeContext {
     }
 
     @Override
-    public EventLoopExecutor executor() {
+    public NioEventLoopExecutor executor() {
         return pipeline.executor();
     }
 

@@ -2,7 +2,7 @@ package org.example.network.tcp;
 
 import org.example.log.Logs;
 import org.example.network.buf.Bytes;
-import org.example.network.event.EventLoopExecutor;
+import org.example.network.event.NioEventLoopExecutor;
 import org.example.network.pipe.PipeHandler;
 import org.example.network.pipe.Pipeline;
 
@@ -22,7 +22,7 @@ public class TcpServer {
 
     private static final Logger logger = Logs.getLogger(TcpServer.class);
 
-    private final EventLoopExecutor executor;
+    private final NioEventLoopExecutor executor;
     private final ServerSocketChannel channel;
     private final int bufCapacity;
 
@@ -32,9 +32,9 @@ public class TcpServer {
         Objects.requireNonNull(config.handler, "config.handler");
         Objects.requireNonNull(config.host, "config.host");
         executor = config.executor == null
-                ? EventLoopExecutor.getDefault()
+                ? NioEventLoopExecutor.getDefault()
                 : config.executor;
-        if (executor.getStatus() == EventLoopExecutor.STATUS_READY) {
+        if (executor.getStatus() == NioEventLoopExecutor.STATUS_READY) {
             executor.start();
         }
 
@@ -65,7 +65,7 @@ public class TcpServer {
         logger.log(INFO, () -> "tpc server bind " + address + " success");
     }
 
-    public EventLoopExecutor executor() {
+    public NioEventLoopExecutor executor() {
         return executor;
     }
 
@@ -84,7 +84,7 @@ public class TcpServer {
 
     public static class Config {
 
-        public EventLoopExecutor executor;
+        public NioEventLoopExecutor executor;
 
         public String host = "127.0.0.1";
 
