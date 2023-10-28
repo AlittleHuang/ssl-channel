@@ -1,7 +1,6 @@
 package org.example.network.event.pipe.handlers;
 
 import org.example.network.buf.ByteBufferUtil;
-import org.example.network.event.NioEventLoopExecutor;
 import org.example.network.pipe.PipeContext;
 import org.example.network.pipe.PipeHandler;
 import org.example.network.pipe.handlers.SslPipeHandler;
@@ -11,7 +10,6 @@ import org.example.network.tcp.TcpClient.Config;
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.Selector;
 import java.security.NoSuchAlgorithmException;
 
 class SslHandlerTest {

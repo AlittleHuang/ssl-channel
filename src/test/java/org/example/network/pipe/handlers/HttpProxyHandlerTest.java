@@ -1,7 +1,6 @@
 package org.example.network.pipe.handlers;
 
 import org.example.network.buf.ByteBufferUtil;
-import org.example.network.event.NioEventLoopExecutor;
 import org.example.network.pipe.PipeContext;
 import org.example.network.pipe.PipeHandler;
 import org.example.network.tcp.TcpClient;
@@ -10,7 +9,6 @@ import org.example.network.tcp.TcpClient.Config;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.Selector;
 
 class HttpProxyHandlerTest {
 

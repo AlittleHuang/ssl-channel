@@ -1,7 +1,6 @@
 package org.example.network.pipe.handlers;
 
 import org.example.network.jray.KeeperClientHandler;
-import org.example.network.jray.KeeperServerHandler;
 import org.example.network.pipe.Pipeline;
 import org.example.network.tcp.TcpClient;
 import org.example.network.tcp.TcpServer;
@@ -41,7 +40,6 @@ class ConnectionKeeperTest {
         public static void main(String[] args) throws IOException {
             Config config = new Config();
             config.bindPort = PORT;
-            config.handler = new KeeperServerHandler();
             TcpServer.open(config);
             LockSupport.park();
         }

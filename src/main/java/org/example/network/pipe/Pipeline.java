@@ -178,7 +178,10 @@ public class Pipeline implements ByteBufferAllocator {
         public void onWrite(PipeContext ctx, ByteBuffer buf) {
             try {
                 while (buf.hasRemaining()) {
+                    long l = System.currentTimeMillis();
+                    int remaining = buf.remaining();
                     ctx.pipeline().channel.write(buf);
+                    logger.log(TRACE, () -> ctx.pipeline().getChannel() + " write " + remaining + " bytes in " + (System.currentTimeMillis() - l) + " ms");
                 }
             } catch (Exception e) {
                 ctx.pipeline().onError(e);

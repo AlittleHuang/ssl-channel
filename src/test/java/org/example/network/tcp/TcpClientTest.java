@@ -2,11 +2,9 @@ package org.example.network.tcp;
 
 import org.example.network.pipe.PipeContext;
 import org.example.network.pipe.PipeHandler;
-import org.example.network.tcp.TcpClient;
 import org.example.network.tcp.TcpClient.Config;
 
 import java.io.IOException;
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 
 class TcpClientTest {

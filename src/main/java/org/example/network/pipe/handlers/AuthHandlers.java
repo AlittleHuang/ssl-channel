@@ -1,12 +1,5 @@
 package org.example.network.pipe.handlers;
 
-import org.example.network.pipe.handlers.AuthClientHandler;
-import org.example.network.pipe.handlers.AuthServerHandler;
-
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.UUID;
-
 public class AuthHandlers {
 
     private static final byte[] key = {

@@ -40,6 +40,7 @@ public class AuthServerHandler implements PipeHandler {
                 }
             }
             if (checkedLen == key.length) {
+                System.out.println("AuthServerHandler - connected");
                 ctx.fireConnected();
                 if (buf.hasRemaining()) {
                     ctx.fireReceive(buf);
