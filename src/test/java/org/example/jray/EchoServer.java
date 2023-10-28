@@ -3,8 +3,8 @@ package org.example.jray;
 import org.example.network.buf.ByteBufferUtil;
 import org.example.network.pipe.PipeContext;
 import org.example.network.pipe.PipeHandler;
-import org.example.network.tcp.io.TcpServer;
-import org.example.network.tcp.io.TcpServer.Config;
+import org.example.network.tcp.TcpServer;
+import org.example.network.tcp.TcpServer.Config;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -14,8 +14,8 @@ public class EchoServer {
 
     public static void main(String[] args) throws IOException {
         Config config = new Config();
-        config.port = 1443;
-        config.host = "0.0.0.0";
+        config.bindPort = 1443;
+        config.bindHost = "0.0.0.0";
         config.handler = new PipeHandler() {
             @Override
             public void onReceive(PipeContext ctx, ByteBuffer buf) {

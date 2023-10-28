@@ -6,6 +6,7 @@ import org.example.network.pipe.handlers.HandlerUtil;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -151,7 +152,7 @@ public class PipeNode implements PipeContext {
     }
 
     @Override
-    public void fireConnect(InetSocketAddress address) throws IOException {
+    public void fireConnect(SocketAddress address) throws IOException {
         PipeNode node = pre;
         while (node != null && HandlerUtil.isDefault(ON_CONNECT, node.handler)) {
             node = node.pre;
@@ -176,7 +177,7 @@ public class PipeNode implements PipeContext {
         handler.onReadTheEnd(this);
     }
 
-    private void onConnect(InetSocketAddress address) throws IOException {
+    private void onConnect(SocketAddress address) throws IOException {
         handler.onConnect(this, address);
     }
 

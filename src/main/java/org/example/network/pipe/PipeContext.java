@@ -2,6 +2,7 @@ package org.example.network.pipe;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 
 public interface PipeContext {
@@ -40,7 +41,7 @@ public interface PipeContext {
 
     void fireError(Throwable throwable);
 
-    void fireConnect(InetSocketAddress address) throws IOException;
+    void fireConnect(SocketAddress address) throws IOException;
 
     void fireReadeTheEnd() throws IOException;
 

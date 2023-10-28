@@ -7,7 +7,7 @@ import org.example.network.pipe.PipeHandler;
 import java.io.IOException;
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
-import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 
 public class AuthServerHandler implements PipeHandler {
@@ -51,7 +51,7 @@ public class AuthServerHandler implements PipeHandler {
         }
 
         @Override
-        public void onConnect(PipeContext ctx, InetSocketAddress address) {
+        public void onConnect(PipeContext ctx, SocketAddress address) {
 
         }
     }

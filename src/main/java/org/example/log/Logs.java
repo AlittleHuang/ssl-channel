@@ -1,6 +1,7 @@
 package org.example.log;
 
 import java.io.InputStream;
+import java.nio.channels.Channel;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
@@ -21,5 +22,9 @@ public class Logs {
         return System.getLogger(clazz.getName());
     }
 
+
+    public static String toString(Channel channel) {
+        return String.valueOf(channel);
+    }
 
 }

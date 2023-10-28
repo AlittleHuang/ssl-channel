@@ -4,8 +4,8 @@ import org.example.network.buf.ByteBufferUtil;
 import org.example.network.event.NioEventLoopExecutor;
 import org.example.network.pipe.PipeContext;
 import org.example.network.pipe.PipeHandler;
-import org.example.network.tcp.nio.NioTcpClient;
-import org.example.network.tcp.nio.NioTcpClient.Config;
+import org.example.network.tcp.TcpClient;
+import org.example.network.tcp.TcpClient.Config;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -19,7 +19,6 @@ class HttpProxyHandlerTest {
 
         config.host = "www.baidu.com";
         config.port = 80;
-        config.executor = NioEventLoopExecutor.open(Selector.open());
         config.handler = new PipeHandler() {
 
             @Override
@@ -46,9 +45,8 @@ class HttpProxyHandlerTest {
         };
 
 
-        NioTcpClient client = new NioTcpClient(config);
+        TcpClient client = new TcpClient(config);
         Thread.sleep(5000);
-        client.executor().close();
     }
 
 }

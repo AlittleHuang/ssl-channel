@@ -2,13 +2,15 @@ package org.example.network.pipe;
 
 import org.example.log.Logs;
 import org.example.network.buf.ByteBufferAllocator;
+import org.example.network.buf.Bytes;
 import org.example.network.buf.PooledAllocator;
 import org.example.network.event.PipelineReadableListener;
+import org.example.network.tcp.PipeConfig;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.System.Logger;
-import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
@@ -44,6 +46,8 @@ public class Pipeline implements ByteBufferAllocator {
 
     private boolean closed;
 
+    private int bufCap = Bytes.DEF_CAP;
+
 
     public Pipeline(WritableByteChannel channel) {
         this.channel = channel;
@@ -51,6 +55,13 @@ public class Pipeline implements ByteBufferAllocator {
         this.head = node(new HeadHandler());
         this.tail = node(new TailHandler());
         PipeNode.link(head, tail);
+    }
+
+    public Pipeline(SocketChannel channel, PipeConfig config) {
+        this(channel);
+        bufCap = config.bufCapacity;
+        addLast(config.handler);
+        autoRead = config.autoRead;
     }
 
 
@@ -142,7 +153,7 @@ public class Pipeline implements ByteBufferAllocator {
         }
     }
 
-    public void connect(InetSocketAddress address) throws IOException {
+    public void connect(SocketAddress address) throws IOException {
         tail.fireConnect(address);
     }
 
@@ -152,6 +163,14 @@ public class Pipeline implements ByteBufferAllocator {
 
     public void onReadeTheEnd() throws IOException {
         head.fireReadeTheEnd();
+    }
+
+    public ByteBuffer allocate() {
+        return allocator.allocate(bufCap);
+    }
+
+    public int getBufCap() {
+        return bufCap;
     }
 
     static class HeadHandler implements PipeHandler {
@@ -194,7 +213,7 @@ public class Pipeline implements ByteBufferAllocator {
         }
 
         @Override
-        public void onConnect(PipeContext ctx, InetSocketAddress address) throws IOException {
+        public void onConnect(PipeContext ctx, SocketAddress address) throws IOException {
             if (ctx.pipeline().getChannel() instanceof SocketChannel channel) {
                 channel.connect(address);
             } else {

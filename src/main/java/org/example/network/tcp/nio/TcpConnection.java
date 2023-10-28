@@ -22,12 +22,10 @@ class TcpConnection implements SelectionKeyHandler {
 
     final Pipeline pipeline;
     final SocketChannel channel;
-    final int bufCapacity;
 
-    TcpConnection(Pipeline pipeline, SocketChannel channel, int bufCapacity) {
+    TcpConnection(Pipeline pipeline, SocketChannel channel) {
         this.pipeline = pipeline;
         this.channel = channel;
-        this.bufCapacity = bufCapacity;
     }
 
     @Override
@@ -73,13 +71,13 @@ class TcpConnection implements SelectionKeyHandler {
         }
         if (key.isReadable() && isReadable()) {
             pipeline.setRequiredRead(false);
-            ByteBuffer buf = pipeline.allocate(bufCapacity);
+            ByteBuffer buf = pipeline.allocate();
             int read;
             while ((read = read(buf)) > 0) {
                 if (buf.position() == buf.limit()) {
                     buf.flip();
                     receive(buf);
-                    buf = pipeline.allocate(bufCapacity);
+                    buf = pipeline.allocate();
                 }
             }
             if (buf.flip().hasRemaining()) {

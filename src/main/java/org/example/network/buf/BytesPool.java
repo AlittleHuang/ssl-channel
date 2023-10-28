@@ -55,7 +55,7 @@ public class BytesPool implements Clearable {
             return next;
         }
         byte[] bytes = new byte[length];
-        logger.log(INFO, () -> "new " + identity(bytes));
+        logger.log(DEBUG, () -> "new " + identity(bytes));
         return bytes;
     }
 
@@ -83,7 +83,7 @@ public class BytesPool implements Clearable {
                     logger.log(WARNING, () -> identity(bytes) + "bytes is already in pool");
                 }
             } else {
-                logger.log(DEBUG, () -> "pool is full, size: " + pool.size());
+                logger.log(TRACE, () -> "pool is full, size: " + pool.size());
             }
         } finally {
             lock.unlock();
@@ -144,7 +144,7 @@ public class BytesPool implements Clearable {
             }
             int newSize = pool.size();
             if (oldSize != newSize) {
-                logger.log(INFO, () -> "pool size updated: " + oldSize + " -> " + pool.size());
+                logger.log(DEBUG, () -> "pool size updated: " + oldSize + " -> " + pool.size());
             }
             return pool.isEmpty();
         } finally {

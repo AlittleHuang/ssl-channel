@@ -6,6 +6,7 @@ import org.example.network.pipe.PipeHandler;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.text.MessageFormat;
 import java.util.Arrays;
@@ -14,7 +15,7 @@ import java.util.Objects;
 public class HttpProxyHandler implements PipeHandler {
 
     private final InetSocketAddress server;
-    private InetSocketAddress target;
+    private SocketAddress target;
     private boolean established;
     private ByteBuffer request;
 
@@ -23,7 +24,7 @@ public class HttpProxyHandler implements PipeHandler {
     }
 
     @Override
-    public void onConnect(PipeContext ctx, InetSocketAddress address) throws IOException {
+    public void onConnect(PipeContext ctx, SocketAddress address) throws IOException {
         ctx.fireConnect(server);
         this.target = address;
     }
@@ -35,10 +36,11 @@ public class HttpProxyHandler implements PipeHandler {
                 Host: {0}:{1}\r
                 \r
                 """;
+        InetSocketAddress addr = (InetSocketAddress) target;
         String reqMsg = MessageFormat.format(
                 reqTemplate,
-                target.getHostName(),
-                Integer.toString(target.getPort())
+                addr.getHostName(),
+                Integer.toString(addr.getPort())
         );
         ByteBuffer req = ByteBuffer.wrap(reqMsg.getBytes());
         ctx.fireWrite(req);

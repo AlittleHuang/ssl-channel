@@ -5,8 +5,8 @@ import org.example.network.event.NioEventLoopExecutor;
 import org.example.network.pipe.PipeContext;
 import org.example.network.pipe.PipeHandler;
 import org.example.network.pipe.handlers.SslPipeHandler;
-import org.example.network.tcp.nio.NioTcpClient;
-import org.example.network.tcp.nio.NioTcpClient.Config;
+import org.example.network.tcp.TcpClient;
+import org.example.network.tcp.TcpClient.Config;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
@@ -22,7 +22,6 @@ class SslHandlerTest {
 
         config.host = "www.baidu.com";
         config.port = 443;
-        config.executor = NioEventLoopExecutor.open(Selector.open());
         config.handler = new PipeHandler() {
 
             @Override
@@ -55,9 +54,8 @@ class SslHandlerTest {
         };
 
 
-        NioTcpClient client = new NioTcpClient(config);
+        TcpClient client = new TcpClient(config);
         Thread.sleep(5000);
-        client.executor().close();
     }
 
 }

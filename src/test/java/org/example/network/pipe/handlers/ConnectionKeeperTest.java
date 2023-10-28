@@ -3,9 +3,9 @@ package org.example.network.pipe.handlers;
 import org.example.network.jray.KeeperClientHandler;
 import org.example.network.jray.KeeperServerHandler;
 import org.example.network.pipe.Pipeline;
-import org.example.network.tcp.nio.NioTcpClient;
-import org.example.network.tcp.nio.NioTcpServer;
-import org.example.network.tcp.nio.NioTcpServer.Config;
+import org.example.network.tcp.TcpClient;
+import org.example.network.tcp.TcpServer;
+import org.example.network.tcp.TcpServer.Config;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -22,12 +22,12 @@ class ConnectionKeeperTest {
     static class Client {
         public static void main(String[] args) throws IOException, InterruptedException {
 
-            NioTcpClient.Config config = new NioTcpClient.Config();
+            TcpClient.Config config = new TcpClient.Config();
             config.host = "127.0.0.1";
             config.port = PORT;
             KeeperClientHandler handler = new KeeperClientHandler(new ArrayDeque<>());
             config.handler = handler;
-            NioTcpClient.open(config);
+            TcpClient.open(config);
             Thread.sleep(1000);
 
             CompletableFuture<Pipeline> remove = handler.connect();
@@ -40,9 +40,9 @@ class ConnectionKeeperTest {
     static class Server {
         public static void main(String[] args) throws IOException {
             Config config = new Config();
-            config.port = PORT;
+            config.bindPort = PORT;
             config.handler = new KeeperServerHandler();
-            NioTcpServer.open(config);
+            TcpServer.open(config);
             LockSupport.park();
         }
     }

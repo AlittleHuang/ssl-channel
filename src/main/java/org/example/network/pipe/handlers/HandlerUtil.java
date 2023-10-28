@@ -8,6 +8,7 @@ import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.EnumMap;
 import java.util.Map;
@@ -49,7 +50,7 @@ public class HandlerUtil {
 
         ON_ERROR(getMethod(() -> PipeHandler.class.getMethod("onError", PipeContext.class, Throwable.class))),
 
-        ON_CONNECT(getMethod(() -> PipeHandler.class.getMethod("onConnect", PipeContext.class, InetSocketAddress.class))),
+        ON_CONNECT(getMethod(() -> PipeHandler.class.getMethod("onConnect", PipeContext.class, SocketAddress.class))),
 
         ON_READ_THE_END(getMethod(() -> PipeHandler.class.getMethod("onReadTheEnd", PipeContext.class)));
 
