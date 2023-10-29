@@ -80,7 +80,7 @@ public class BytesPool implements Clearable {
                         ExpiredCacheCleaner.getInstance().register(this);
                     }
                 } else {
-                    logger.log(WARNING, () -> identity(bytes) + "bytes is already in pool");
+                    logger.log(WARNING, () -> identity(bytes) + " bytes is already in pool", new Exception());
                 }
             } else {
                 logger.log(TRACE, () -> "pool is full, size: " + pool.size());

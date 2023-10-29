@@ -48,7 +48,6 @@ public class HttpProxyRemoteHandler implements PipeHandler {
                 remote.write(buf);
             } else {
                 establishConnection(ctx, buf);
-                ctx.free(buf);
             }
         }
 
@@ -117,7 +116,9 @@ public class HttpProxyRemoteHandler implements PipeHandler {
         @Override
         public void onClose(PipeContext ctx) throws IOException {
             PipeHandler.super.onClose(ctx);
-            remote.close();
+            if (remote != null) {
+                remote.close();
+            }
         }
     }
 }

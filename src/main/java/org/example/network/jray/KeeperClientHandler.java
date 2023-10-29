@@ -1,6 +1,7 @@
 package org.example.network.jray;
 
 import org.example.network.pipe.PipeContext;
+import org.example.network.pipe.PipeHandler;
 import org.example.network.pipe.Pipeline;
 import org.example.network.pipe.handlers.AuthHandlers;
 
@@ -8,7 +9,7 @@ import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 
-public class KeeperClientHandler extends ConnectionKeeper {
+public class KeeperClientHandler implements PipeHandler {
 
     private final CompletableFuture<Void> connected = new CompletableFuture<>();
 
@@ -32,13 +33,13 @@ public class KeeperClientHandler extends ConnectionKeeper {
 
     @Override
     public void onError(PipeContext ctx, Throwable throwable) {
-        super.onError(ctx, throwable);
+        PipeHandler.super.onError(ctx, throwable);
         removeFromQueue();
     }
 
     @Override
     public void onClose(PipeContext ctx) throws IOException {
-        super.onClose(ctx);
+        PipeHandler.super.onClose(ctx);
         removeFromQueue();
     }
 
@@ -50,6 +51,7 @@ public class KeeperClientHandler extends ConnectionKeeper {
 
     public CompletableFuture<Pipeline> connect() {
         removeFromQueue();
+        context.remove();
         return connected.thenApply(__ -> context.pipeline());
     }
 
